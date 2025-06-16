@@ -1,0 +1,29 @@
+{
+  "name": "chainchirp-cli",
+  "module": "index.ts",
+  "type": "module",
+  "private": true,
+  "devDependencies": {
+    "@types/bun": "latest",
+    "@types/node": "^24.0.3",
+    "@typescript-eslint/eslint-plugin": "^8.34.1",
+    "@typescript-eslint/parser": "^8.34.1",
+    "eslint": "^9.29.0",
+    "eslint-config-prettier": "^10.1.5",
+    "husky": "^9.1.7",
+    "lint-staged": "^16.1.2",
+    "prettier": "^3.5.3"
+  },
+  "peerDependencies": {
+    "typescript": "^5.8.3"
+  },
+  "dependencies": {
+    "cac": "^6.7.14",
+    "chalk": "^5.4.1",
+    "gradient-string": "^3.0.0",
+    "ora": "^8.2.0"
+  },
+  "lint-staged": {
+    "*.{ts,tsx,js}": ["eslint --fix", "prettier --write"]
+  }
+}
