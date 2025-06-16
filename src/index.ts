@@ -31,7 +31,7 @@ async function handlePriceCommand(options: { currency?: string; json?: boolean }
     const currency = (options.currency || 'usd') as Currency
     
     if (!options.json) {
-      console.log(chalk.blue('🔍 Fetching Bitcoin price...\n'))
+      console.log(chalk.cyan('●') + chalk.gray(' Fetching Bitcoin price...'))
     }
     
     const result = await getCurrentBitcoinPrice(currency)
@@ -52,17 +52,21 @@ async function handlePriceCommand(options: { currency?: string; json?: boolean }
           maximumFractionDigits: 2,
         }).format(result.data!)
         
-        console.log(chalk.green('💰 Bitcoin Price'))
-        console.log(chalk.white(`   ${formattedPrice}`))
-        console.log(chalk.gray(`   Last updated: ${result.timestamp.toLocaleString()}`))
-        console.log(chalk.gray(`   Execution time: ${result.executionTime}ms`))
+        console.log('')
+        console.log(chalk.green('✓') + ' ' + chalk.bold('Bitcoin Price'))
+        console.log('  ' + chalk.white(formattedPrice))
+        console.log('')
+        console.log(chalk.gray('  ◦ Updated: ' + result.timestamp.toLocaleString()))
+        console.log(chalk.gray('  ◦ Latency: ' + result.executionTime + 'ms'))
       }
     } else {
       const errorMsg = result.error?.message || 'Unknown error occurred'
       if (options.json) {
         console.log(JSON.stringify({ error: errorMsg }, null, 2))
       } else {
-        console.error(chalk.red('❌ Error:'), errorMsg)
+        console.error('')
+        console.error(chalk.red('✕') + ' ' + chalk.bold('Error'))
+        console.error('  ' + chalk.gray(errorMsg))
       }
       process.exit(1)
     }
