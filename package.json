@@ -18,12 +18,24 @@
     "typescript": "^5.8.3"
   },
   "dependencies": {
+    "axios": "^1.10.0",
     "cac": "^6.7.14",
     "chalk": "^5.4.1",
     "gradient-string": "^3.0.0",
     "ora": "^8.2.0"
   },
   "lint-staged": {
-    "*.{ts,tsx,js}": ["eslint --fix", "prettier --write"]
+    "*.{ts,tsx,js}": [
+      "eslint --fix",
+      "prettier --write"
+    ]
+  },
+  "scripts": {
+    "dev": "bun --hot src/index.ts --price",
+    "lint": "eslint src --ext .ts",
+    "format": "prettier --write .",
+    "test": "bun test",
+    "build": "bun build src/index.ts --outfile dist/index.js --minify",
+    "prepare": "husky install"
   }
 }
