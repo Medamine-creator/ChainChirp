@@ -2,150 +2,126 @@ import { formatJson } from '@/utils/formatter'
 import type { CommandResult } from '@/types'
 
 // =============================================================================
-// JSON Output Decorator Types
+// JSON Decorator Types
 // =============================================================================
 
 export interface JsonOptions {
   json?: boolean
 }
 
-export interface OutputHandlers<T> {
-  success: (data: T, result: CommandResult<T>) => void
-  error: (error: string) => void
+export interface JsonFormatter<T> {
+  (data: T, result: CommandResult<T>): Record<string, unknown>
+}
+
+export interface JsonErrorFormatter {
+  (error: string): Record<string, unknown>
 }
 
 // =============================================================================
-// JSON Output Decorator
+// JSON Decorator Implementation
 // =============================================================================
 
-export function withJsonOutput<T>(
-  handlers: OutputHandlers<T>
+export function withJson<TOptions extends JsonOptions, TData>(
+  formatter: JsonFormatter<TData>,
+  errorFormatter?: JsonErrorFormatter
 ) {
-  return function (options: JsonOptions = {}) {
-    const { json = false } = options
+  return function (
+    commandFn: (options: Omit<TOptions, 'json'>) => Promise<CommandResult<TData>>
+  ) {
+    return async function (options: TOptions): Promise<void> {
+      const { json, ...commandOptions } = options
+      const result = await commandFn(commandOptions as Omit<TOptions, 'json'>)
 
-    return {
-      handleSuccess(data: T, result: CommandResult<T>): void {
+      if (result.success && result.data) {
         if (json) {
-          // For JSON output, we need to determine what data to show
-          // This will be customized per command type
-          console.log(formatJson({
-            ...(typeof data === 'object' && data !== null ? data : { data }),
-            executionTime: result.executionTime,
-            timestamp: result.timestamp.toISOString(),
-          }))
+          const jsonData = formatter(result.data, result)
+          console.log(formatJson(jsonData))
         } else {
-          handlers.success(data, result)
+          // Let the command handle human-readable output
+          return
         }
-      },
-
-      handleError(error: string): void {
+      } else {
+        const errorMsg = result.error?.message || 'Unknown error occurred'
         if (json) {
-          console.log(formatJson({ 
-            error,
-            timestamp: new Date().toISOString()
-          }))
+          const errorData = errorFormatter 
+            ? errorFormatter(errorMsg)
+            : { error: errorMsg }
+          console.log(formatJson(errorData))
         } else {
-          handlers.error(error)
+          throw result.error || new Error(errorMsg)
         }
-      },
-
-      isJsonMode(): boolean {
-        return json
+        process.exit(1)
       }
     }
   }
 }
 
 // =============================================================================
-// JSON Output Helper Functions
+// Common JSON Formatters
 // =============================================================================
 
-export function createJsonSuccessHandler<T>(
-  dataTransformer: (data: T, result: CommandResult<T>) => Record<string, unknown>
-) {
-  return function (data: T, result: CommandResult<T>): void {
-    const transformedData = dataTransformer(data, result)
-    console.log(formatJson({
-      ...transformedData,
-      executionTime: result.executionTime,
-      timestamp: result.timestamp.toISOString(),
-    }))
-  }
-}
+export const defaultJsonFormatter = <T>(data: T, result: CommandResult<T>) => ({
+  ...data,
+  timestamp    : result.timestamp.toISOString(),
+  executionTime: result.executionTime,
+})
 
-export function createJsonErrorHandler() {
-  return function (error: string): void {
-    console.log(formatJson({ 
-      error,
-      timestamp: new Date().toISOString()
-    }))
-  }
-}
+export const defaultErrorFormatter = (error: string) => ({
+  error,
+  timestamp: new Date().toISOString(),
+})
 
-// =============================================================================
-// Specialized JSON Handlers for Common Command Types
-// =============================================================================
+export const priceJsonFormatter = (data: any, result: CommandResult<any>) => ({
+  price        : data.price,
+  currency     : data.currency?.toUpperCase(),
+  timestamp    : result.timestamp.toISOString(),
+  executionTime: result.executionTime,
+})
 
-export const jsonHandlers = {
-  price: {
-    success: createJsonSuccessHandler((data: any, result) => ({
-      price: data.price,
-      currency: data.currency?.toUpperCase() || 'USD',
-    })),
-    error: createJsonErrorHandler()
-  },
+export const volumeJsonFormatter = (data: any, result: CommandResult<any>) => ({
+  volume24h             : data.volume24h,
+  volumeChange24h       : data.volumeChange24h,
+  volumeChangePercent24h: data.volumeChangePercent24h,
+  currency              : data.currency?.toUpperCase(),
+  timestamp             : data.timestamp.toISOString(),
+  executionTime         : result.executionTime,
+})
 
-  volume: {
-    success: createJsonSuccessHandler((data: any, result) => ({
-      volume24h: data.volume24h,
-      volumeChange24h: data.volumeChange24h,
-      volumeChangePercent24h: data.volumeChangePercent24h,
-      currency: data.currency?.toUpperCase() || 'USD',
-    })),
-    error: createJsonErrorHandler()
-  },
+export const changeJsonFormatter = (data: any, result: CommandResult<any>) => ({
+  current         : data.current,
+  change1h        : data.change1h,
+  change24h       : data.change24h,
+  change7d        : data.change7d,
+  change30d       : data.change30d,
+  changePercent1h : data.changePercent1h,
+  changePercent24h: data.changePercent24h,
+  changePercent7d : data.changePercent7d,
+  changePercent30d: data.changePercent30d,
+  currency        : data.currency?.toUpperCase(),
+  executionTime   : result.executionTime,
+})
 
-  change: {
-    success: createJsonSuccessHandler((data: any, result) => ({
-      current: data.current,
-      change1h: data.change1h,
-      change24h: data.change24h,
-      change7d: data.change7d,
-      change30d: data.change30d,
-      changePercent1h: data.changePercent1h,
-      changePercent24h: data.changePercent24h,
-      changePercent7d: data.changePercent7d,
-      changePercent30d: data.changePercent30d,
-      currency: data.currency?.toUpperCase() || 'USD',
-    })),
-    error: createJsonErrorHandler()
-  },
+export const highlowJsonFormatter = (data: any, result: CommandResult<any>) => ({
+  current             : data.current,
+  high24h             : data.high24h,
+  low24h              : data.low24h,
+  ath                 : data.ath,
+  athDate             : data.athDate.toISOString(),
+  atl                 : data.atl,
+  atlDate             : data.atlDate.toISOString(),
+  currency            : data.currency?.toUpperCase(),
+  athChangePercent    : data.athChangePercent,
+  atlChangePercent    : data.atlChangePercent,
+  high24hChangePercent: data.high24hChangePercent,
+  low24hChangePercent : data.low24hChangePercent,
+  executionTime       : result.executionTime,
+})
 
-  highlow: {
-    success: createJsonSuccessHandler((data: any, result) => ({
-      current: data.current,
-      high24h: data.high24h,
-      low24h: data.low24h,
-      ath: data.ath,
-      athDate: data.athDate?.toISOString(),
-      atl: data.atl,
-      atlDate: data.atlDate?.toISOString(),
-      athChangePercent: data.athChangePercent,
-      atlChangePercent: data.atlChangePercent,
-      currency: data.currency?.toUpperCase() || 'USD',
-    })),
-    error: createJsonErrorHandler()
-  },
-
-  sparkline: {
-    success: createJsonSuccessHandler((data: any, result) => ({
-      prices: data.prices,
-      timeframe: data.timeframe,
-      currency: data.currency?.toUpperCase() || 'USD',
-      width: data.width,
-      height: data.height,
-    })),
-    error: createJsonErrorHandler()
-  }
-}
+export const sparklineJsonFormatter = (data: any, result: CommandResult<any>) => ({
+  prices       : data.prices,
+  timeframe    : data.timeframe,
+  currency     : data.currency?.toUpperCase(),
+  width        : data.width,
+  height       : data.height,
+  executionTime: result.executionTime,
+})

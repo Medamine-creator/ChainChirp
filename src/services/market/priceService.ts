@@ -1,6 +1,5 @@
 import { fetchWithFallback } from '@/services/apiClient'
 import type {
-  MarketData,
   Currency,
   BaseService,
   CommandResult,
@@ -70,7 +69,7 @@ export class PriceService implements BaseService {
       }
 
       const priceData: PriceData = {
-        price    : bitcoinData[currency] || bitcoinData.usd,
+        price    : bitcoinData[currency] || bitcoinData.usd || 0,
         currency,
         timestamp: new Date(bitcoinData.last_updated_at ? bitcoinData.last_updated_at * 1000 : Date.now()),
       }
@@ -91,7 +90,7 @@ export class PriceService implements BaseService {
           currency : detailedData.currency,
           timestamp: detailedData.timestamp,
         }
-      } catch (fallbackError) {
+      } catch {
         throw new Error(
           `Failed to fetch current price: ${error instanceof Error ? error.message : 'Unknown error'}`,
         )
@@ -198,19 +197,19 @@ export class PriceService implements BaseService {
         totalSupply?      : number
         maxSupply?        : number
       } = {
-        price            : marketData.current_price[currency] || marketData.current_price.usd,
+        price            : marketData.current_price[currency] || marketData.current_price.usd || 0,
         currency,
         timestamp        : new Date(data.last_updated || Date.now()),
-        marketCap        : marketData.market_cap[currency] || marketData.market_cap.usd,
-        volume24h        : marketData.total_volume[currency] || marketData.total_volume.usd,
-        change24h        : marketData.price_change_24h,
-        changePercent24h : marketData.price_change_percentage_24h,
+        marketCap        : marketData.market_cap[currency] || marketData.market_cap.usd || 0,
+        volume24h        : marketData.total_volume[currency] || marketData.total_volume.usd || 0,
+        change24h        : marketData.price_change_24h || 0,
+        changePercent24h : marketData.price_change_percentage_24h || 0,
         high24h          : marketData.high_24h[currency] || marketData.high_24h.usd,
         low24h           : marketData.low_24h[currency] || marketData.low_24h.usd,
         ath              : marketData.ath[currency] || marketData.ath.usd,
-        athDate          : new Date(marketData.ath_date[currency] || marketData.ath_date.usd),
+        athDate          : new Date(marketData.ath_date[currency] || marketData.ath_date.usd || Date.now()),
         atl              : marketData.atl[currency] || marketData.atl.usd,
-        atlDate          : new Date(marketData.atl_date[currency] || marketData.atl_date.usd),
+        atlDate          : new Date(marketData.atl_date[currency] || marketData.atl_date.usd || Date.now()),
         athChangePercent : marketData.ath_change_percentage[currency] || marketData.ath_change_percentage.usd,
         atlChangePercent : marketData.atl_change_percentage[currency] || marketData.atl_change_percentage.usd,
         circulatingSupply: marketData.circulating_supply,
