@@ -155,13 +155,18 @@ export interface PriceChangeData {
 }
 
 export interface HighLowData {
-  high24h : number
-  low24h  : number
-  ath     : number
-  athDate : Date
-  atl     : number
-  atlDate : Date
-  currency: string
+  current              : number
+  high24h              : number
+  low24h               : number
+  ath                  : number
+  athDate              : Date
+  atl                  : number
+  atlDate              : Date
+  currency             : string
+  high24hChangePercent?: number
+  low24hChangePercent? : number
+  athChangePercent?    : number
+  atlChangePercent?    : number
 }
 
 export interface SparklineData {
