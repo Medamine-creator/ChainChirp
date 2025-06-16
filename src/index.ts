@@ -2,7 +2,6 @@
 
 import { cac } from 'cac'
 import chalk from 'chalk'
-import { banner } from './utils/banner'
 import { getCurrentBitcoinPrice } from './services/market/priceService'
 import type { Currency } from './types'
 
@@ -32,7 +31,6 @@ async function handlePriceCommand(options: { currency?: string; json?: boolean }
     const currency = (options.currency || 'usd') as Currency
     
     if (!options.json) {
-      console.log(banner())
       console.log(chalk.blue('🔍 Fetching Bitcoin price...\n'))
     }
     
