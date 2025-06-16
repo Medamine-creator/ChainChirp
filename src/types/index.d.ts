@@ -253,21 +253,8 @@ export interface FearGreedIndex {
 // Configuration & Command Types
 // =============================================================================
 
-// Command Categories
-export enum CommandCategory {
-  MARKET = 'market',
-  CHAIN = 'chain',
-  LIGHTNING = 'lightning',
-  SENTIMENT = 'sentiment',
-}
-
-// Output Formats
-export enum OutputFormat {
-  DEFAULT = 'default',
-  JSON = 'json',
-  TABLE = 'table',
-  CSV = 'csv',
-}
+// Re-export runtime enums
+export { OutputFormat, CommandCategory } from './enums'
 
 // Watch Configuration
 export interface WatchConfig {

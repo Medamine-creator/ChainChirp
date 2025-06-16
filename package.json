@@ -3,6 +3,9 @@
   "module": "index.ts",
   "type": "module",
   "private": true,
+  "bin": {
+    "chainchirp": "./dist/index.js"
+  },
   "devDependencies": {
     "@stylistic/eslint-plugin": "^4.4.1",
     "@types/bun": "latest",
@@ -11,7 +14,8 @@
     "@typescript-eslint/parser": "^8.34.1",
     "eslint": "^9.29.0",
     "husky": "^9.1.7",
-    "lint-staged": "^16.1.2"
+    "lint-staged": "^16.1.2",
+    "tsc-alias": "^1.8.16"
   },
   "peerDependencies": {
     "typescript": "^5.8.3"
@@ -32,7 +36,7 @@
     "dev": "bun --hot src/index.ts --price",
     "lint": "eslint src --ext .ts --ext .d.ts --fix",
     "test": "bun test",
-    "build": "bun build src/index.ts --outfile dist/index.js --minify",
+    "build": "mkdir -p dist && bunx tsc --project tsconfig.build.json && bunx tsc-alias -p tsconfig.build.json --resolve-full-paths",
     "prepare": "husky install"
   }
 }

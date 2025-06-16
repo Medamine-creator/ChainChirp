@@ -1,6 +1,6 @@
 import axios from 'axios'
 import type { AxiosInstance, AxiosRequestConfig, AxiosResponse } from 'axios'
-import { OutputFormat } from '@/types'
+import { OutputFormat } from '@/types/enums'
 import type {
   ApiResponse,
   ApiError,
