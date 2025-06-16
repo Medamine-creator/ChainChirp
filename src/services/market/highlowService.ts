@@ -288,29 +288,3 @@ export async function getBitcoinHighLow(currency: Currency = 'usd'): Promise<Com
   }
 }
 
-export async function getBitcoin24HHighLow(currency: Currency = 'usd'): Promise<CommandResult<{
-  high24h: number
-  low24h : number
-  current: number
-}>> {
-  const startTime = Date.now()
-  
-  try {
-    const service = getHighLowService()
-    const data = await service.get24HourHighLow(currency)
-    
-    return {
-      success      : true,
-      data,
-      timestamp    : new Date(),
-      executionTime: Date.now() - startTime,
-    }
-  } catch (error) {
-    return {
-      success      : false,
-      error        : error as Error,
-      timestamp    : new Date(),
-      executionTime: Date.now() - startTime,
-    }
-  }
-} 

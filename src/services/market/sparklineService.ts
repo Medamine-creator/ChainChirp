@@ -322,30 +322,3 @@ export async function getBitcoinSparkline(
   }
 }
 
-export async function getBitcoinAsciiSparkline(
-  currency: Currency = 'usd',
-  timeframe: TimeFrame = '7d',
-  width = 80,
-  height = 8,
-): Promise<CommandResult<string>> {
-  const startTime = Date.now()
-  
-  try {
-    const service = getSparklineService()
-    const ascii = await service.generateAsciiSparkline(currency, timeframe, width, height)
-    
-    return {
-      success      : true,
-      data         : ascii,
-      timestamp    : new Date(),
-      executionTime: Date.now() - startTime,
-    }
-  } catch (error) {
-    return {
-      success      : false,
-      error        : error as Error,
-      timestamp    : new Date(),
-      executionTime: Date.now() - startTime,
-    }
-  }
-} 

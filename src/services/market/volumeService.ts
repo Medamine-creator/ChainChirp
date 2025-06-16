@@ -373,25 +373,3 @@ export async function getBitcoinVolume(currency: Currency = 'usd'): Promise<Comm
   }
 }
 
-export async function getBitcoin24HVolume(currency: Currency = 'usd'): Promise<CommandResult<number>> {
-  const startTime = Date.now()
-
-  try {
-    const service = getVolumeService()
-    const volume = await service.get24HourVolume(currency)
-
-    return {
-      success      : true,
-      data         : volume,
-      timestamp    : new Date(),
-      executionTime: Date.now() - startTime,
-    }
-  } catch (error) {
-    return {
-      success      : false,
-      error        : error as Error,
-      timestamp    : new Date(),
-      executionTime: Date.now() - startTime,
-    }
-  }
-} 

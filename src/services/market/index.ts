@@ -16,28 +16,24 @@ import {
   VolumeService,
   getVolumeService,
   getBitcoinVolume,
-  getBitcoin24HVolume,  
 } from './volumeService'
 
 import {
   ChangeService,
   getChangeService,
   getBitcoinPriceChange,
-  getBitcoinPercentageChanges,
 } from './changeService'
 
 import {
   HighLowService,
   getHighLowService,
   getBitcoinHighLow,
-  getBitcoin24HHighLow,
 } from './highlowService'
 
 import {
   SparklineService,
   getSparklineService,
   getBitcoinSparkline,
-  getBitcoinAsciiSparkline,
 } from './sparklineService'
 
 // =============================================================================
@@ -55,25 +51,21 @@ export {
   VolumeService,
   getVolumeService,
   getBitcoinVolume,
-  getBitcoin24HVolume,
   
   // Change Service
   ChangeService,
   getChangeService,
   getBitcoinPriceChange,
-  getBitcoinPercentageChanges,
   
   // High/Low Service
   HighLowService,
   getHighLowService,
   getBitcoinHighLow,
-  getBitcoin24HHighLow,
   
   // Sparkline Service
   SparklineService,
   getSparklineService,
   getBitcoinSparkline,
-  getBitcoinAsciiSparkline,
 }
 
 // =============================================================================

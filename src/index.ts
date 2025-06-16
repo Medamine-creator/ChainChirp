@@ -26,15 +26,25 @@ cli.option('--currency <currency>', 'Currency for price display', { default: 'us
 // Price command
 cli
   .command('price', marketCommandDescriptions.price.description)
-  .option('--detailed', 'Show detailed market data')
+  .option('--detailed', 'Show comprehensive market data including 24h high/low, volume, market cap, and all-time records')
   .action(async (options) => {
     try {
-      await marketCommands.price({
-        currency: options.currency as Currency,
-        json    : options.json,
-        watch   : options.watch,
-        interval: parseInt(options.interval) || 30,
-      })
+      if (options.detailed) {
+        const { detailedPriceCommand } = await import('@/commands/market/price')
+        await detailedPriceCommand({
+          currency: options.currency as Currency,
+          json    : options.json,
+          watch   : options.watch,
+          interval: parseInt(options.interval) || 30,
+        })
+      } else {
+        await marketCommands.price({
+          currency: options.currency as Currency,
+          json    : options.json,
+          watch   : options.watch,
+          interval: parseInt(options.interval) || 30,
+        })
+      }
     } catch (error) {
       console.error(chalk.red('✕ Price command failed:'), error instanceof Error ? error.message : 'Unknown error')
       process.exit(1)
@@ -99,9 +109,9 @@ cli
 cli
   .command('sparkline', marketCommandDescriptions.sparkline.description)
   .alias('spark')
-  .option('--timeframe <timeframe>', 'Time period (1h, 24h, 7d, 30d)', { default: '24h' })
-  .option('--width <width>', 'Chart width in characters', { default: 40 })
-  .option('--height <height>', 'Chart height in characters', { default: 8 })
+  .option('--timeframe <timeframe>', 'Time period for chart (1h, 24h, 7d, 30d) [default: 24h]')
+  .option('--width <width>', 'Chart width in characters [default: 40]')
+  .option('--height <height>', 'Chart height in characters [default: 8]')
   .action(async (options) => {
     try {
       await marketCommands.sparkline({
@@ -124,7 +134,7 @@ cli
 // =============================================================================
 
 cli
-  .command('', 'Get Bitcoin price information (default)')
+  .command('')
   .option('--price', 'Get current Bitcoin price (deprecated: use "price" command)')
   .action(async (options) => {
     if (options.price) {

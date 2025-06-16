@@ -93,7 +93,7 @@ async function executeChangeCommand(options: {
         console.log(`  Current: ${currentPrice}`)
         console.log('')
         
-        if (data.change1h && data.changePercent1h) {
+        if (data.change1h !== undefined && data.changePercent1h !== undefined && data.change1h !== 0) {
           const change1h = formatPriceChange(data.change1h)
           const changePercent1h = formatPriceChange(data.changePercent1h, true)
           console.log(formatInfoLine('1 Hour', `${change1h} (${changePercent1h})`))
@@ -104,13 +104,13 @@ async function executeChangeCommand(options: {
         console.log(formatInfoLine('24 Hours', `${change24h} (${changePercent24h})`))
         
         if (detailed) {
-          if (data.change7d && data.changePercent7d) {
+          if (data.change7d !== undefined && data.changePercent7d !== undefined) {
             const change7d = formatPriceChange(data.change7d)
             const changePercent7d = formatPriceChange(data.changePercent7d, true)
             console.log(formatInfoLine('7 Days', `${change7d} (${changePercent7d})`))
           }
           
-          if (data.change30d && data.changePercent30d) {
+          if (data.change30d !== undefined && data.changePercent30d !== undefined) {
             const change30d = formatPriceChange(data.change30d)
             const changePercent30d = formatPriceChange(data.changePercent30d, true)
             console.log(formatInfoLine('30 Days', `${change30d} (${changePercent30d})`))
@@ -198,7 +198,7 @@ async function watchChangeCommand(options: {
           console.log(`  Current: ${currentPrice}`)
           console.log('')
           
-          if (data.change1h && data.changePercent1h) {
+          if (data.change1h !== undefined && data.changePercent1h !== undefined && data.change1h !== 0) {
             const change1h = formatPriceChange(data.change1h)
             const changePercent1h = formatPriceChange(data.changePercent1h, true)
             console.log(formatInfoLine('1 Hour', `${change1h} (${changePercent1h})`))
@@ -207,13 +207,13 @@ async function watchChangeCommand(options: {
           console.log(formatInfoLine('24 Hours', `${change24h} (${changePercent24h})`))
           
           if (detailed) {
-            if (data.change7d && data.changePercent7d) {
+            if (data.change7d !== undefined && data.changePercent7d !== undefined) {
               const change7d = formatPriceChange(data.change7d)
               const changePercent7d = formatPriceChange(data.changePercent7d, true)
               console.log(formatInfoLine('7 Days', `${change7d} (${changePercent7d})`))
             }
             
-            if (data.change30d && data.changePercent30d) {
+            if (data.change30d !== undefined && data.changePercent30d !== undefined) {
               const change30d = formatPriceChange(data.change30d)
               const changePercent30d = formatPriceChange(data.changePercent30d, true)
               console.log(formatInfoLine('30 Days', `${change30d} (${changePercent30d})`))

@@ -260,30 +260,3 @@ export async function getBitcoinPriceChange(currency: Currency = 'usd'): Promise
   }
 }
 
-export async function getBitcoinPercentageChanges(currency: Currency = 'usd'): Promise<CommandResult<{
-  percent1h : number
-  percent24h: number
-  percent7d : number
-  percent30d: number
-}>> {
-  const startTime = Date.now()
-  
-  try {
-    const service = getChangeService()
-    const percentChanges = await service.getPercentageChanges(currency)
-    
-    return {
-      success      : true,
-      data         : percentChanges,
-      timestamp    : new Date(),
-      executionTime: Date.now() - startTime,
-    }
-  } catch (error) {
-    return {
-      success      : false,
-      error        : error as Error,
-      timestamp    : new Date(),
-      executionTime: Date.now() - startTime,
-    }
-  }
-} 
