@@ -253,8 +253,9 @@ export interface FearGreedIndex {
 // Configuration & Command Types
 // =============================================================================
 
-// Re-export runtime enums
-export { OutputFormat, CommandCategory } from './enums'
+// Import and re-export runtime enums
+import { OutputFormat, CommandCategory } from './enums'
+export { OutputFormat, CommandCategory }
 
 // Watch Configuration
 export interface WatchConfig {

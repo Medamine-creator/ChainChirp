@@ -36,7 +36,7 @@
     "dev": "bun --hot src/index.ts --price",
     "lint": "eslint src --ext .ts --ext .d.ts --fix",
     "test": "bun test",
-    "build": "mkdir -p dist && bunx tsc --project tsconfig.build.json && bunx tsc-alias -p tsconfig.build.json --resolve-full-paths",
+    "build": "bun build src/index.ts --outdir dist --target node --format esm --external axios --external chalk --external cac --external gradient-string --external ora",
     "prepare": "husky install"
   }
 }
