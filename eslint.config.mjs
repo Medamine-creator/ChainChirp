@@ -3,6 +3,7 @@ import path     from 'node:path'
 import js       from '@eslint/js'
 import tsParser from '@typescript-eslint/parser'
 import tsPlugin from '@typescript-eslint/eslint-plugin'
+import stylistic from '@stylistic/eslint-plugin'
 
 import { fileURLToPath } from 'node:url'
 
@@ -35,14 +36,29 @@ export default [
       parserOptions : {
         project         : ['./tsconfig.json'],
         tsconfigRootDir : process.cwd(),
+        // Enable path mapping resolution
+        typescript: {
+          alwaysTryTypes: true,
+          project: './tsconfig.json'
+        }
       },
     },
 
     plugins : {
       '@typescript-eslint' : tsPlugin,
+      '@stylistic'         : stylistic,
     },
 
-    /* Merge core & TS recommended rules, then overlay spacing style */
+    settings: {
+      'import/resolver': {
+        typescript: {
+          alwaysTryTypes: true,
+          project: './tsconfig.json'
+        }
+      }
+    },
+
+    /* Base rule sets + spacing-style overrides */
     rules : {
       ...js.configs.recommended.rules,
       ...tsPlugin.configs.recommended.rules,
@@ -56,10 +72,7 @@ export default [
       'operator-linebreak'    : 'off',
       'array-bracket-spacing' : ['error', 'always'],
 
-      'key-spacing' : ['error', {
-        multiLine : { beforeColon : true, afterColon : true },
-        align     : { beforeColon : true, afterColon : true },
-      }],
+      'key-spacing' : 'off', // Using @stylistic/key-spacing instead
 
       /* ─── TS rule customisations ─────────────────────────────────── */
       '@typescript-eslint/indent'                        : 'off',
@@ -83,8 +96,24 @@ export default [
         ignoreRestSiblings             : true,
       }],
 
-      '@typescript-eslint/no-invalid-void-type' : ['error', {
-        allowInGenericTypeArguments : true,
+      '@typescript-eslint/no-explicit-any'               : 'off',
+      '@typescript-eslint/no-invalid-void-type'          : ['error', { allowInGenericTypeArguments : true }],
+
+      /* ─── Stylistic formatting rules ──────────────────────────── */
+      '@stylistic/member-delimiter-style'                : ['error', {
+        multiline : {
+          delimiter   : 'none',
+          requireLast : false,
+        },
+        singleline : {
+          delimiter   : 'semi',
+          requireLast : false,
+        },
+      }],
+      '@stylistic/key-spacing'                           : ['error', {
+        beforeColon : false,
+        afterColon  : true,
+        align       : 'colon',
       }],
     },
   },

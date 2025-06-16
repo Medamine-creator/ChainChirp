@@ -1,36 +1,36 @@
 import axios from 'axios'
 import type { AxiosInstance, AxiosRequestConfig, AxiosResponse } from 'axios'
-import { OutputFormat } from '../types/index.js'
+import { OutputFormat } from '@/types'
 import type {
   ApiResponse,
   ApiError,
   LogLevel,
   ChainChirpConfig,
-} from '../types/index.js'
+} from '@/types'
 
 // =============================================================================
 // Internal Types for Strict Typing
 // =============================================================================
 
 interface AxiosErrorResponse {
-  data: unknown;
-  status: number;
-  headers: Record<string, string>;
+  data   : unknown
+  status : number
+  headers: Record<string, string>
 }
 
 interface AxiosErrorConfig {
-  url?: string;
-  method?: string;
-  __retryCount?: number;
-  [key: string]: unknown;
+  url?         : string
+  method?      : string
+  __retryCount?: number
+  [key: string]: unknown
 }
 
 interface AxiosError {
-  message?: string;
-  code?: string;
-  config?: AxiosErrorConfig;
-  response?: AxiosErrorResponse;
-  [key: string]: unknown;
+  message?     : string
+  code?        : string
+  config?      : AxiosErrorConfig
+  response?    : AxiosErrorResponse
+  [key: string]: unknown
 }
 
 type RequestData =
@@ -51,25 +51,25 @@ type QueryParams = Record<
 // =============================================================================
 
 export const DEFAULT_CONFIG: ChainChirpConfig = {
-  defaultCurrency     : 'usd',
-  defaultOutputFormat : OutputFormat.DEFAULT,
-  apiTimeout          : 10000,
-  debugMode           : false,
-  watchDefaults       : {
-    enabled     : false,
-    interval    : 30,
-    clearScreen : true,
+  defaultCurrency    : 'usd',
+  defaultOutputFormat: OutputFormat.DEFAULT,
+  apiTimeout         : 10000,
+  debugMode          : false,
+  watchDefaults      : {
+    enabled    : false,
+    interval   : 30,
+    clearScreen: true,
   },
-  apiEndpoints : {
-    coingecko  : 'https://api.coingecko.com/api/v3',
-    mempool    : 'https://mempool.space/api',
-    blockchain : 'https://blockchain.info',
-    lightning  : 'https://1ml.com/api',
-    fearGreed  : 'https://api.alternative.me',
+  apiEndpoints: {
+    coingecko : 'https://api.coingecko.com/api/v3',
+    mempool   : 'https://mempool.space/api',
+    blockchain: 'https://blockchain.info',
+    lightning : 'https://1ml.com/api',
+    fearGreed : 'https://api.alternative.me',
   },
-  rateLimit : {
-    requestsPerMinute : 60,
-    burstLimit        : 10,
+  rateLimit: {
+    requestsPerMinute: 60,
+    burstLimit       : 10,
   },
 }
 
@@ -78,8 +78,8 @@ export const DEFAULT_CONFIG: ChainChirpConfig = {
 // =============================================================================
 
 class RateLimiter {
-  private requests: number[] = []
-  private readonly windowMs: number
+  private requests            : number[] = []
+  private readonly windowMs   : number
   private readonly maxRequests: number
 
   constructor(requestsPerMinute: number) {
@@ -117,8 +117,8 @@ class RateLimiter {
 // =============================================================================
 
 export class ApiClient {
-  private client: AxiosInstance
-  private rateLimiter: RateLimiter
+  private client         : AxiosInstance
+  private rateLimiter    : RateLimiter
   private readonly config: ChainChirpConfig
 
   constructor(config: Partial<ChainChirpConfig> = {}) {
@@ -130,11 +130,11 @@ export class ApiClient {
 
   private createAxiosInstance(): AxiosInstance {
     return axios.create({
-      timeout : this.config.apiTimeout,
-      headers : {
-        'User-Agent'   : 'ChainChirp-CLI/1.0.0',
-        Accept         : 'application/json',
-        'Content-Type' : 'application/json',
+      timeout: this.config.apiTimeout,
+      headers: {
+        'User-Agent'  : 'ChainChirp-CLI/1.0.0',
+        Accept        : 'application/json',
+        'Content-Type': 'application/json',
       },
     })
   }
@@ -195,9 +195,9 @@ export class ApiClient {
 
     if (err.response) {
       apiError.response = {
-        data    : err.response.data,
-        status  : err.response.status,
-        headers : err.response.headers,
+        data   : err.response.data,
+        status : err.response.status,
+        headers: err.response.headers,
       }
     }
 
@@ -284,10 +284,10 @@ export class ApiClient {
 
   private formatResponse<T>(response: AxiosResponse<T>): ApiResponse<T> {
     return {
-      data      : response.data,
-      status    : response.status,
-      headers   : response.headers as Record<string, string>,
-      timestamp : new Date(),
+      data     : response.data,
+      status   : response.status,
+      headers  : response.headers as Record<string, string>,
+      timestamp: new Date(),
     }
   }
 

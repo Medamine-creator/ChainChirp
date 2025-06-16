@@ -14,6 +14,16 @@
     "verbatimModuleSyntax": true,
     "noEmit": true,
 
+    // Path mapping for cleaner imports
+    "baseUrl": ".",
+    "paths": {
+      "@/*": ["src/*"],
+      "@/types": ["src/types"],
+      "@/utils/*": ["src/utils/*"],
+      "@/services/*": ["src/services/*"],
+      "@/commands/*": ["src/commands/*"]
+    },
+
     // Best practices
     "strict": true,
     "skipLibCheck": true,
