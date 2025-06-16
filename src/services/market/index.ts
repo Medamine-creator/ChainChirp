@@ -8,8 +8,8 @@ import type { Currency, BaseService } from '@/types'
 import {
   PriceService,
   getPriceService,
-  getCurrentBitcoinPrice,
-  getBitcoinMarketData,
+  getBitcoinPrice,
+  getBitcoinDetailedPrice,
 } from './priceService'
 
 import {
@@ -44,8 +44,8 @@ export {
   // Price Service
   PriceService,
   getPriceService,
-  getCurrentBitcoinPrice,
-  getBitcoinMarketData,
+  getBitcoinPrice,
+  getBitcoinDetailedPrice,
   
   // Volume Service
   VolumeService,
@@ -99,7 +99,7 @@ export class MarketService implements BaseService {
 
   async getCompleteMarketData(currency: Currency = 'usd') {
     const [ marketData, volumeData, changeData, highlowData, sparklineData ] = await Promise.all([
-      this.priceService.getMarketData(currency),
+      this.priceService.getCurrentPrice(currency),
       this.volumeService.getVolumeData(currency),
       this.changeService.getPriceChange(currency),
       this.highlowService.getHighLowData(currency),

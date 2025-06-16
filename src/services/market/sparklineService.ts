@@ -1,4 +1,4 @@
-import { coingecko } from '@/services/apiClient'
+import { fetchWithFallback } from '@/services/apiClient'
 import type {
   SparklineData,
   Currency,
@@ -12,10 +12,6 @@ import type {
 // =============================================================================
 
 const SPARKLINE_CACHE_TTL = 120 * 1000 // 2 minutes
-const ENDPOINTS = {
-  coinData   : '/coins/bitcoin',
-  marketChart: '/coins/bitcoin/market_chart',
-} as const
 
 interface SparklineCache {
   data     : SparklineData
@@ -28,10 +24,7 @@ interface SparklineCache {
 
 export class SparklineService implements BaseService {
   readonly name = 'SparklineService'
-  readonly endpoints = [
-    ENDPOINTS.coinData,
-    ENDPOINTS.marketChart,
-  ]
+  readonly endpoints = [ '/coins/bitcoin', '/coins/bitcoin/market_chart' ]
 
   private cache = new Map<string, SparklineCache>()
 
@@ -57,51 +50,52 @@ export class SparklineService implements BaseService {
       let prices: number[] = []
 
       if (timeframe === '7d') {
-        // Use sparkline from coin data endpoint for 7d
-        const data = await coingecko<unknown>(ENDPOINTS.coinData, {
-          localization  : false,
-          tickers       : false,
-          market_data   : true,
-          community_data: false,
-          developer_data: false,
-          sparkline     : true,
-        })
+        // Try sparkline from coin data endpoint for 7d first
+        try {
+          const data = await fetchWithFallback<{
+            market_data: {
+              sparkline_7d: { price: number[] }
+            }
+          }>(
+            '/coins/bitcoin',
+            {
+              localization  : false,
+              tickers       : false,
+              market_data   : true,
+              community_data: false,
+              developer_data: false,
+              sparkline     : true,
+            },
+            {
+              providers: [ 'coingecko' ] // Only CoinGecko has sparkline in coin data
+            }
+          )
 
-        const marketData = data as Record<string, unknown>
-        const sparklineData = marketData.market_data as Record<string, unknown>
-        const sparkline7d = sparklineData.sparkline_7d as { price: number[] }
-
-        if (sparkline7d?.price && Array.isArray(sparkline7d.price)) {
-          prices = sparkline7d.price
+          const sparkline7d = data.market_data?.sparkline_7d
+          if (sparkline7d?.price && Array.isArray(sparkline7d.price)) {
+            prices = sparkline7d.price
+          }
+        } catch {
+          // Fallback to market chart for 7d if sparkline fails
+          prices = await this.getMarketChartPrices(currency, 7)
         }
       } else {
         // Use market chart endpoint for other timeframes
         const days = this.timeframeToDays(timeframe)
-        const data = await coingecko<{ prices: [number, number][] }>(
-          ENDPOINTS.marketChart,
-          {
-            vs_currency: currency,
-            days       : days.toString(),
-            interval   : days <= 1 ? 'hourly' : 'daily',
-          },
-        )
-
-                 if (data.prices && Array.isArray(data.prices)) {
-           prices = data.prices.map(([ , price ]) => price)
-         }
+        prices = await this.getMarketChartPrices(currency, days)
       }
 
       if (prices.length === 0) {
         throw new Error('No price data available for sparkline')
       }
 
-             const sparklineData: SparklineData = {
-         prices,
-         timeframe: timeframe === '1y' ? '30d' : timeframe, // Map 1y to 30d for SparklineData
-         currency,
-         width,
-         height,
-       }
+      const sparklineData: SparklineData = {
+        prices,
+        timeframe: timeframe === '1y' ? '30d' : timeframe, // Map 1y to 30d for SparklineData
+        currency,
+        width,
+        height,
+      }
 
       // Cache the result
       this.cache.set(cacheKey, {
@@ -125,6 +119,58 @@ export class SparklineService implements BaseService {
   ): Promise<string> {
     const sparklineData = await this.getSparklineData(currency, timeframe, width, height)
     return this.renderAsciiSparkline(sparklineData.prices, width, height)
+  }
+
+  // ===========================================================================
+  // Market Chart Data Helper
+  // ===========================================================================
+
+  private async getMarketChartPrices(currency: Currency, days: number): Promise<number[]> {
+    try {
+      const data = await fetchWithFallback<{ prices: [number, number][] }>(
+        '/coins/bitcoin/market_chart',
+        {
+          vs_currency: currency,
+          days       : days.toString(),
+          interval   : days <= 1 ? 'hourly' : 'daily',
+        },
+        {
+          providers: [ 'coingecko', 'binance', 'coinmarketcap' ]
+        }
+      )
+
+      if (data.prices && Array.isArray(data.prices)) {
+        return data.prices.map(([ , price ]) => price)
+      }
+
+      return []
+    } catch (error) {
+      // If market chart fails, try to generate synthetic data from simple price
+      try {
+        const simpleData = await fetchWithFallback<{ bitcoin: { [key: string]: number } }>(
+          '/simple/price',
+          {
+            ids          : 'bitcoin',
+            vs_currencies: currency,
+          },
+          {
+            providers: [ 'coingecko', 'coinmarketcap', 'binance', 'coinbase', 'kraken' ]
+          }
+        )
+
+        const currentPrice = simpleData.bitcoin[currency] || simpleData.bitcoin.usd
+        if (currentPrice) {
+          // Generate a simple flat line with the current price
+          return Array(Math.max(10, days)).fill(currentPrice)
+        }
+      } catch {
+        // If all fails, return empty array
+      }
+
+      throw new Error(
+        `Failed to fetch market chart data: ${error instanceof Error ? error.message : 'Unknown error'}`
+      )
+    }
   }
 
   // ===========================================================================

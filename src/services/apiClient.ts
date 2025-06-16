@@ -47,8 +47,85 @@ type QueryParams = Record<
 >;
 
 // =============================================================================
+// Multi-API Provider Types
+// =============================================================================
+
+interface ApiProvider {
+  name              : string
+  baseUrl           : string
+  rateLimitPerMinute: number
+  requiresAuth      : boolean
+  priority          : number
+  healthEndpoint?   : string
+  headers?          : Record<string, string>
+}
+
+interface FallbackOptions {
+  maxRetries    : number
+  providers     : string[]
+  skipProviders?: string[]
+}
+
+// =============================================================================
 // Configuration Constants
 // =============================================================================
+
+export const API_PROVIDERS: Record<string, ApiProvider> = {
+  coingecko: {
+    name              : 'CoinGecko',
+    baseUrl           : 'https://api.coingecko.com/api/v3',
+    rateLimitPerMinute: 30, // Free tier limit
+    requiresAuth      : false,
+    priority          : 1,
+    healthEndpoint    : '/ping'
+  },
+  coinmarketcap: {
+    name              : 'CoinMarketCap',
+    baseUrl           : 'https://pro-api.coinmarketcap.com/v1',
+    rateLimitPerMinute: 333, // Free tier: 10k/month
+    requiresAuth      : false,
+    priority          : 2,
+    healthEndpoint    : '/cryptocurrency/listings/latest',
+    headers           : {
+      'X-CMC_PRO_API_KEY': process.env.CMC_API_KEY || 'DEMO_KEY'
+    }
+  },
+  coinapi: {
+    name              : 'CoinAPI',
+    baseUrl           : 'https://rest.coinapi.io/v1',
+    rateLimitPerMinute: 100, // Free tier: 100 req/day
+    requiresAuth      : false,
+    priority          : 3,
+    healthEndpoint    : '/exchangerate/BTC/USD',
+    headers           : {
+      'X-CoinAPI-Key': process.env.COINAPI_KEY || 'DEMO_KEY'
+    }
+  },
+  binance: {
+    name              : 'Binance',
+    baseUrl           : 'https://api.binance.com/api/v3',
+    rateLimitPerMinute: 1200, // High limit for public endpoints
+    requiresAuth      : false,
+    priority          : 4,
+    healthEndpoint    : '/ping'
+  },
+  coinbase: {
+    name              : 'Coinbase',
+    baseUrl           : 'https://api.coinbase.com/v2',
+    rateLimitPerMinute: 10000, // Very high for public data
+    requiresAuth      : false,
+    priority          : 5,
+    healthEndpoint    : '/exchange-rates'
+  },
+  kraken: {
+    name              : 'Kraken',
+    baseUrl           : 'https://api.kraken.com/0/public',
+    rateLimitPerMinute: 60,
+    requiresAuth      : false,
+    priority          : 6,
+    healthEndpoint    : '/SystemStatus'
+  }
+}
 
 export const DEFAULT_CONFIG: ChainChirpConfig = {
   defaultCurrency    : 'usd',
@@ -113,7 +190,412 @@ class RateLimiter {
 }
 
 // =============================================================================
-// API Client Implementation
+// Multi-API Fallback System
+// =============================================================================
+
+export class MultiFallbackClient {
+  private clients = new Map<string, AxiosInstance>()
+  private rateLimiters = new Map<string, RateLimiter>()
+  private readonly config: ChainChirpConfig
+  private providerHealth = new Map<string, boolean>()
+
+  constructor(config: Partial<ChainChirpConfig> = {}) {
+    this.config = { ...DEFAULT_CONFIG, ...config }
+    this.initializeProviders()
+  }
+
+  private initializeProviders(): void {
+    Object.entries(API_PROVIDERS).forEach(([ key, provider ]) => {
+      const client = axios.create({
+        baseURL: provider.baseUrl,
+        timeout: this.config.apiTimeout,
+        headers: {
+          'User-Agent'  : 'ChainChirp-CLI/1.0.0',
+          Accept        : 'application/json',
+          'Content-Type': 'application/json',
+          ...provider.headers,
+        },
+      })
+
+      this.clients.set(key, client)
+      this.rateLimiters.set(key, new RateLimiter(provider.rateLimitPerMinute))
+      this.providerHealth.set(key, true) // Assume healthy initially
+    })
+  }
+
+  async fetchWithFallback<T>(
+    endpoint: string,
+    params?: QueryParams,
+    options: Partial<FallbackOptions> = {}
+  ): Promise<T> {
+    const fallbackOptions: FallbackOptions = {
+      maxRetries: 3,
+      providers : [ 'coingecko', 'coinmarketcap', 'coinapi', 'binance', 'coinbase', 'kraken' ],
+      ...options
+    }
+
+    const availableProviders = fallbackOptions.providers
+      .filter(provider => !fallbackOptions.skipProviders?.includes(provider))
+      .filter(provider => this.clients.has(provider))
+      .sort((a, b) => API_PROVIDERS[a]?.priority - API_PROVIDERS[b]?.priority)
+
+    let lastError: Error | null = null
+
+    for (const providerKey of availableProviders) {
+      try {
+        this.log('debug', `Trying provider: ${API_PROVIDERS[providerKey]?.name}`)
+        
+        const rateLimiter = this.rateLimiters.get(providerKey)
+        if (rateLimiter) {
+          await rateLimiter.checkLimit()
+        }
+
+        const result = await this.makeRequest<T>(providerKey, endpoint, params)
+        
+        // Mark provider as healthy if request succeeds
+        this.providerHealth.set(providerKey, true)
+        
+        this.log('info', `✓ Success with ${API_PROVIDERS[providerKey]?.name}`)
+        return result
+        
+      } catch (error) {
+        lastError = error as Error
+        const provider = API_PROVIDERS[providerKey]
+        
+        this.log('warn', `✗ ${provider?.name} failed: ${lastError.message}`)
+        
+        // Mark provider as potentially unhealthy for certain errors
+        if (this.isProviderError(error)) {
+          this.providerHealth.set(providerKey, false)
+        }
+        
+        // Continue to next provider
+        continue
+      }
+    }
+
+    // All providers failed
+    throw new Error(
+      `All API providers failed. Last error: ${lastError?.message || 'Unknown error'}`
+    )
+  }
+
+  private async makeRequest<T>(
+    providerKey: string,
+    endpoint: string,
+    params?: QueryParams
+  ): Promise<T> {
+    const client = this.clients.get(providerKey)
+    const provider = API_PROVIDERS[providerKey]
+    
+    if (!client || !provider) {
+      throw new Error(`Provider ${providerKey} not found`)
+    }
+
+    // Transform endpoint and params for different providers
+    const { transformedEndpoint, transformedParams } = this.transformRequest(
+      providerKey,
+      endpoint,
+      params
+    )
+
+    const response = await client.get<T>(transformedEndpoint, {
+      params: transformedParams
+    })
+
+    // Transform response to common format
+    return this.transformResponse<T>(providerKey, response.data, endpoint)
+  }
+
+  private transformRequest(
+    providerKey: string,
+    endpoint: string,
+    params?: QueryParams
+  ): { transformedEndpoint: string; transformedParams?: QueryParams } {
+    switch (providerKey) {
+      case 'coingecko':
+        return { transformedEndpoint: endpoint, transformedParams: params }
+        
+      case 'coinmarketcap':
+        return this.transformCoinMarketCapRequest(endpoint, params)
+        
+      case 'coinapi':
+        return this.transformCoinAPIRequest(endpoint, params)
+        
+      case 'binance':
+        return this.transformBinanceRequest(endpoint, params)
+        
+      case 'coinbase':
+        return this.transformCoinbaseRequest(endpoint, params)
+        
+      case 'kraken':
+        return this.transformKrakenRequest(endpoint, params)
+        
+      default:
+        return { transformedEndpoint: endpoint, transformedParams: params }
+    }
+  }
+
+  private transformCoinMarketCapRequest(
+    endpoint: string,
+    params?: QueryParams
+  ): { transformedEndpoint: string; transformedParams?: QueryParams } {
+    // Transform CoinGecko endpoints to CoinMarketCap equivalents
+    if (endpoint === '/coins/bitcoin') {
+      return {
+        transformedEndpoint: '/cryptocurrency/quotes/latest',
+        transformedParams  : { symbol: 'BTC', ...params }
+      }
+    }
+    
+    if (endpoint === '/simple/price') {
+      return {
+        transformedEndpoint: '/cryptocurrency/quotes/latest',
+        transformedParams  : { symbol: 'BTC', ...params }
+      }
+    }
+
+    return { transformedEndpoint: endpoint, transformedParams: params }
+  }
+
+  private transformCoinAPIRequest(
+    endpoint: string,
+    params?: QueryParams
+  ): { transformedEndpoint: string; transformedParams?: QueryParams } {
+    if (endpoint === '/coins/bitcoin') {
+      return {
+        transformedEndpoint: '/assets/BTC',
+        transformedParams  : params
+      }
+    }
+    
+    if (endpoint === '/simple/price') {
+      return {
+        transformedEndpoint: '/exchangerate/BTC/USD',
+        transformedParams  : params
+      }
+    }
+
+    return { transformedEndpoint: endpoint, transformedParams: params }
+  }
+
+  private transformBinanceRequest(
+    endpoint: string,
+    params?: QueryParams
+  ): { transformedEndpoint: string; transformedParams?: QueryParams } {
+    if (endpoint === '/coins/bitcoin' || endpoint === '/simple/price') {
+      return {
+        transformedEndpoint: '/ticker/price',
+        transformedParams  : { symbol: 'BTCUSDT', ...params }
+      }
+    }
+
+    if (endpoint === '/coins/bitcoin/market_chart') {
+      return {
+        transformedEndpoint: '/klines',
+        transformedParams  : { 
+          symbol  : 'BTCUSDT', 
+          interval: '1d',
+          limit   : params?.days || 7,
+          ...params 
+        }
+      }
+    }
+
+    return { transformedEndpoint: endpoint, transformedParams: params }
+  }
+
+  private transformCoinbaseRequest(
+    endpoint: string,
+    params?: QueryParams
+  ): { transformedEndpoint: string; transformedParams?: QueryParams } {
+    if (endpoint === '/coins/bitcoin' || endpoint === '/simple/price') {
+      return {
+        transformedEndpoint: '/exchange-rates',
+        transformedParams  : { currency: 'BTC', ...params }
+      }
+    }
+
+    return { transformedEndpoint: endpoint, transformedParams: params }
+  }
+
+  private transformKrakenRequest(
+    endpoint: string,
+    params?: QueryParams
+  ): { transformedEndpoint: string; transformedParams?: QueryParams } {
+    if (endpoint === '/coins/bitcoin' || endpoint === '/simple/price') {
+      return {
+        transformedEndpoint: '/Ticker',
+        transformedParams  : { pair: 'XBTUSD', ...params }
+      }
+    }
+
+    return { transformedEndpoint: endpoint, transformedParams: params }
+  }
+
+  private transformResponse<T>(
+    providerKey: string,
+    data: unknown,
+    originalEndpoint: string
+  ): T {
+    switch (providerKey) {
+      case 'coingecko':
+        return data as T
+        
+      case 'coinmarketcap':
+        return this.transformCoinMarketCapResponse(data, originalEndpoint) as T
+        
+      case 'coinapi':
+        return this.transformCoinAPIResponse(data, originalEndpoint) as T
+        
+      case 'binance':
+        return this.transformBinanceResponse(data, originalEndpoint) as T
+        
+      case 'coinbase':
+        return this.transformCoinbaseResponse(data, originalEndpoint) as T
+        
+      case 'kraken':
+        return this.transformKrakenResponse(data, originalEndpoint) as T
+        
+      default:
+        return data as T
+    }
+  }
+
+  private transformCoinMarketCapResponse(data: unknown, endpoint: string): unknown {
+    if (endpoint === '/coins/bitcoin' || endpoint === '/simple/price') {
+      const cmcData = data as { data: { BTC: { quote: { USD: { price: number; market_cap: number; volume_24h: number; percent_change_24h: number } } } } }
+      const btcData = cmcData.data?.BTC?.quote?.USD
+      
+      if (btcData) {
+        return {
+          bitcoin: {
+            usd           : btcData.price,
+            usd_market_cap: btcData.market_cap,
+            usd_24h_vol   : btcData.volume_24h,
+            usd_24h_change: btcData.percent_change_24h
+          }
+        }
+      }
+    }
+    
+    return data
+  }
+
+  private transformCoinAPIResponse(data: unknown, endpoint: string): unknown {
+    if (endpoint === '/simple/price') {
+      const coinApiData = data as { rate: number }
+      return {
+        bitcoin: {
+          usd: coinApiData.rate
+        }
+      }
+    }
+    
+    return data
+  }
+
+  private transformBinanceResponse(data: unknown, endpoint: string): unknown {
+    if (endpoint === '/coins/bitcoin' || endpoint === '/simple/price') {
+      const binanceData = data as { price: string }
+      return {
+        bitcoin: {
+          usd: parseFloat(binanceData.price)
+        }
+      }
+    }
+    
+    return data
+  }
+
+  private transformCoinbaseResponse(data: unknown, endpoint: string): unknown {
+    if (endpoint === '/coins/bitcoin' || endpoint === '/simple/price') {
+      const coinbaseData = data as { data: { rates: { USD: string } } }
+      const usdRate = coinbaseData.data?.rates?.USD
+      
+      if (usdRate) {
+        return {
+          bitcoin: {
+            usd: parseFloat(usdRate)
+          }
+        }
+      }
+    }
+    
+    return data
+  }
+
+  private transformKrakenResponse(data: unknown, endpoint: string): unknown {
+    if (endpoint === '/coins/bitcoin' || endpoint === '/simple/price') {
+      const krakenData = data as { result: { XXBTZUSD: { c: [string] } } }
+      const price = krakenData.result?.XXBTZUSD?.c?.[0]
+      
+      if (price) {
+        return {
+          bitcoin: {
+            usd: parseFloat(price)
+          }
+        }
+      }
+    }
+    
+    return data
+  }
+
+  private isProviderError(error: unknown): boolean {
+    const err = error as AxiosError
+    const status = err.response?.status
+    
+    // Don't mark provider as unhealthy for rate limiting or auth issues
+    return !![ 401, 403, 404, 500, 502, 503, 504 ].includes(status || 0)
+  }
+
+  async healthCheck(): Promise<Record<string, boolean>> {
+    const results: Record<string, boolean> = {}
+    
+    for (const [ key, provider ] of Object.entries(API_PROVIDERS)) {
+      try {
+        const client = this.clients.get(key)
+        if (client && provider.healthEndpoint) {
+          await client.get(provider.healthEndpoint, { timeout: 5000 })
+          results[key] = true
+          this.providerHealth.set(key, true)
+        } else {
+          results[key] = this.providerHealth.get(key) || false
+        }
+      } catch (error) {
+        results[key] = false
+        this.providerHealth.set(key, false)
+        this.log('warn', `Health check failed for ${provider.name}: ${error}`)
+      }
+    }
+    
+    return results
+  }
+
+  getProviderHealth(): Record<string, boolean> {
+    const health: Record<string, boolean> = {}
+    this.providerHealth.forEach((isHealthy, provider) => {
+      health[provider] = isHealthy
+    })
+    return health
+  }
+
+  private log(level: LogLevel, message: string, data?: unknown): void {
+    if (this.config.debugMode || process.env.DEBUG === '1') {
+      const timestamp = new Date().toISOString()
+      console.log(
+        `[${timestamp}] [${level.toUpperCase()}] MultiFallback: ${message}`,
+      )
+      if (data !== undefined) {
+        console.log(JSON.stringify(data, null, 2))
+      }
+    }
+  }
+}
+
+// =============================================================================
+// API Client Implementation (Legacy Support)
 // =============================================================================
 
 export class ApiClient {
@@ -383,6 +865,7 @@ export class ApiClient {
 // =============================================================================
 
 let apiClientInstance: ApiClient | null = null
+let multiFallbackInstance: MultiFallbackClient | null = null
 
 export function getApiClient(config?: Partial<ChainChirpConfig>): ApiClient {
   if (!apiClientInstance) {
@@ -391,12 +874,20 @@ export function getApiClient(config?: Partial<ChainChirpConfig>): ApiClient {
   return apiClientInstance
 }
 
+export function getMultiFallbackClient(config?: Partial<ChainChirpConfig>): MultiFallbackClient {
+  if (!multiFallbackInstance) {
+    multiFallbackInstance = new MultiFallbackClient(config)
+  }
+  return multiFallbackInstance
+}
+
 export function resetApiClient(): void {
   apiClientInstance = null
+  multiFallbackInstance = null
 }
 
 // =============================================================================
-// Convenience Functions
+// Convenience Functions with Fallback Support
 // =============================================================================
 
 export async function api<T>(
@@ -415,6 +906,16 @@ export async function coingecko<T>(
   const client = getApiClient()
   const response = await client.getCoinGecko<T>(endpoint, params)
   return response.data
+}
+
+// New fallback-enabled functions
+export async function fetchWithFallback<T>(
+  endpoint: string,
+  params?: QueryParams,
+  options?: Partial<FallbackOptions>
+): Promise<T> {
+  const client = getMultiFallbackClient()
+  return client.fetchWithFallback<T>(endpoint, params, options)
 }
 
 export async function mempool<T>(

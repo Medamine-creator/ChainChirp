@@ -1,4 +1,4 @@
-import { coingecko } from '@/services/apiClient'
+import { fetchWithFallback } from '@/services/apiClient'
 import type {
   PriceChangeData,
   Currency,
@@ -11,11 +11,6 @@ import type {
 // =============================================================================
 
 const CHANGE_CACHE_TTL = 30 * 1000 // 30 seconds
-const ENDPOINTS = {
-  simplePrice: '/simple/price',
-  marketChart: '/coins/bitcoin/market_chart',
-  coinData   : '/coins/bitcoin',
-} as const
 
 interface ChangeCache {
   data     : PriceChangeData
@@ -28,11 +23,7 @@ interface ChangeCache {
 
 export class ChangeService implements BaseService {
   readonly name = 'ChangeService'
-  readonly endpoints = [
-    ENDPOINTS.simplePrice,
-    ENDPOINTS.marketChart,
-    ENDPOINTS.coinData,
-  ]
+  readonly endpoints = [ '/coins/bitcoin', '/coins/bitcoin/market_chart' ]
 
   private cache = new Map<string, ChangeCache>()
 
@@ -50,30 +41,46 @@ export class ChangeService implements BaseService {
     }
 
     try {
-      const data = await coingecko<unknown>(ENDPOINTS.coinData, {
-        localization  : false,
-        tickers       : false,
-        market_data   : true,
-        community_data: false,
-        developer_data: false,
-        sparkline     : false,
-      })
+      const data = await fetchWithFallback<{
+        market_data: {
+          current_price              : { [key: string]: number }
+          price_change_24h           : number
+          price_change_percentage_24h: number
+          price_change_percentage_7d : number
+          price_change_percentage_30d: number
+        }
+      }>(
+        '/coins/bitcoin',
+        {
+          localization  : false,
+          tickers       : false,
+          market_data   : true,
+          community_data: false,
+          developer_data: false,
+          sparkline     : false,
+        },
+        {
+          providers: [ 'coingecko', 'coinmarketcap' ]
+        }
+      )
 
-      const marketData = data as Record<string, unknown>
-      const priceData = marketData.market_data as Record<string, unknown>
+      const marketData = data.market_data
+      if (!marketData) {
+        throw new Error('Invalid market data response')
+      }
 
-      const current = this.getNumberForCurrency(priceData.current_price, currency)
-      
+      const current = marketData.current_price[currency] || marketData.current_price.usd || 0
+
       const changeData: PriceChangeData = {
         current         : current,
-        change1h        : (priceData.price_change_1h as number) || 0,
-        change24h       : (priceData.price_change_24h as number) || 0,
-        change7d        : this.calculateChange7d(priceData),
-        change30d       : this.calculateChange30d(priceData),
-        changePercent1h : (priceData.price_change_percentage_1h as number) || 0,
-        changePercent24h: (priceData.price_change_percentage_24h as number) || 0,
-        changePercent7d : (priceData.price_change_percentage_7d as number) || 0,
-        changePercent30d: (priceData.price_change_percentage_30d as number) || 0,
+        change1h        : 0, // Will be calculated if available
+        change24h       : marketData.price_change_24h || 0,
+        change7d        : this.calculateChange7d(current, marketData.price_change_percentage_7d || 0),
+        change30d       : this.calculateChange30d(current, marketData.price_change_percentage_30d || 0),
+        changePercent1h : 0, // Will be calculated if available
+        changePercent24h: marketData.price_change_percentage_24h || 0,
+        changePercent7d : marketData.price_change_percentage_7d || 0,
+        changePercent30d: marketData.price_change_percentage_30d || 0,
         currency,
       }
 
@@ -132,13 +139,16 @@ export class ChangeService implements BaseService {
     days: number = 7,
   ): Promise<number[]> {
     try {
-      const data = await coingecko<{ prices: [number, number][] }>(
-        ENDPOINTS.marketChart,
+      const data = await fetchWithFallback<{ prices: [number, number][] }>(
+        '/coins/bitcoin/market_chart',
         {
           vs_currency: currency,
           days       : days.toString(),
           interval   : days <= 1 ? 'hourly' : 'daily',
         },
+        {
+          providers: [ 'coingecko', 'binance' ]
+        }
       )
 
       if (!data.prices || !Array.isArray(data.prices)) {
@@ -207,19 +217,12 @@ export class ChangeService implements BaseService {
   // Private Helper Methods
   // ===========================================================================
 
-  private calculateChange7d(priceData: Record<string, unknown>): number {
-    return (priceData.price_change_7d as number) || 0
+  private calculateChange7d(current: number, percentChange7d: number): number {
+    return percentChange7d ? (current * percentChange7d) / (100 + percentChange7d) : 0
   }
 
-  private calculateChange30d(priceData: Record<string, unknown>): number {
-    return (priceData.price_change_30d as number) || 0
-  }
-
-  private getNumberForCurrency(data: unknown, currency: string): number {
-    if (!data || typeof data !== 'object') return 0
-    
-    const currencyData = data as Record<string, number>
-    return currencyData[currency] || currencyData.usd || 0
+  private calculateChange30d(current: number, percentChange30d: number): number {
+    return percentChange30d ? (current * percentChange30d) / (100 + percentChange30d) : 0
   }
 }
 

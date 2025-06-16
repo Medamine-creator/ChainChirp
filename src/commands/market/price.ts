@@ -1,7 +1,7 @@
 import ora from 'ora'
 import {
-  getCurrentBitcoinPrice,
-  getBitcoinMarketData,
+  getBitcoinPrice,
+  getBitcoinDetailedPrice,
 } from '@/services/market'
 import {
   formatPrice,
@@ -61,7 +61,7 @@ async function executePriceCommand(options: {
   }
 
   try {
-    const result = await getCurrentBitcoinPrice(currency)
+    const result = await getBitcoinPrice(currency)
 
     if (spinner) {
       spinner.stop()
@@ -70,13 +70,13 @@ async function executePriceCommand(options: {
     if (result.success && result.data !== undefined) {
       if (json) {
         console.log(formatJson({
-          price        : result.data,
+          price        : result.data.price,
           currency     : currency.toUpperCase(),
           timestamp    : result.timestamp.toISOString(),
           executionTime: result.executionTime,
         }))
       } else {
-        const formattedPrice = formatPrice(result.data, currency)
+        const formattedPrice = formatPrice(result.data.price, currency)
         console.log('')
         console.log(formatSuccessMessage('Bitcoin Price'))
         console.log(`  ${formattedPrice}`)
@@ -124,17 +124,19 @@ async function watchPriceCommand(options: {
 
   const executeWatch = async (): Promise<void> => {
     try {
-      const result = await getCurrentBitcoinPrice(currency)
+      const result = await getBitcoinPrice(currency)
 
       if (result.success && result.data !== undefined) {
+        const currentPrice = result.data.price
+        
         if (json) {
           const output = {
-            price        : result.data,
+            price        : currentPrice,
             currency     : currency.toUpperCase(),
             timestamp    : result.timestamp.toISOString(),
             executionTime: result.executionTime,
-            change       : previousPrice ? result.data - previousPrice : null,
-            changePercent: previousPrice ? ((result.data - previousPrice) / previousPrice) * 100 : null,
+            change       : previousPrice ? currentPrice - previousPrice : null,
+            changePercent: previousPrice ? ((currentPrice - previousPrice) / previousPrice) * 100 : null,
           }
           console.log(formatJson(output))
         } else {
@@ -145,11 +147,11 @@ async function watchPriceCommand(options: {
             console.clear()
           }
 
-          const formattedPrice = formatPrice(result.data, currency)
+          const formattedPrice = formatPrice(currentPrice, currency)
           let changeText = ''
           
-          if (previousPrice && previousPrice !== result.data) {
-            const change = result.data - previousPrice
+          if (previousPrice && previousPrice !== currentPrice) {
+            const change = currentPrice - previousPrice
             const changePercent = (change / previousPrice) * 100
             changeText = ` ${formatPriceChange(change)} (${formatPriceChange(changePercent, true)})`
           }
@@ -163,7 +165,7 @@ async function watchPriceCommand(options: {
           console.log(formatInfoLine('Press', 'Ctrl+C to exit'))
         }
 
-        previousPrice = result.data
+        previousPrice = currentPrice
       } else {
         const errorMsg = result.error?.message || 'Unknown error occurred'
         if (json) {
@@ -217,14 +219,14 @@ export async function detailedPriceCommand(options: PriceCommandOptions = {}): P
   }
 
   try {
-    const result = await getBitcoinMarketData(currency)
+    const result = await getBitcoinDetailedPrice(currency)
 
     if (spinner) {
       spinner.stop()
     }
 
     if (result.success && result.data) {
-      const data = result.data
+      const data = result.data as any
 
       if (json) {
         console.log(formatJson({
@@ -232,34 +234,32 @@ export async function detailedPriceCommand(options: PriceCommandOptions = {}): P
           currency        : data.currency.toUpperCase(),
           change24h       : data.change24h,
           changePercent24h: data.changePercent24h,
-          change7d        : data.change7d,
-          change30d       : data.change30d,
           marketCap       : data.marketCap,
           volume24h       : data.volume24h,
           high24h         : data.high24h,
           low24h          : data.low24h,
           ath             : data.ath,
           atl             : data.atl,
-          lastUpdated     : data.lastUpdated.toISOString(),
+          timestamp       : data.timestamp.toISOString(),
           executionTime   : result.executionTime,
         }))
       } else {
         const formattedPrice = formatPrice(data.price, currency)
-        const change24h = formatPriceChange(data.change24h)
-        const changePercent24h = formatPriceChange(data.changePercent24h, true)
+        const change24h = formatPriceChange(data.change24h || 0)
+        const changePercent24h = formatPriceChange(data.changePercent24h || 0, true)
 
         console.log('')
         console.log(formatSuccessMessage('Bitcoin Market Data'))
         console.log(`  ${formattedPrice} ${change24h} (${changePercent24h})`)
         console.log('')
-        console.log(formatInfoLine('24h High', formatPrice(data.high24h, currency)))
-        console.log(formatInfoLine('24h Low', formatPrice(data.low24h, currency)))
-        console.log(formatInfoLine('24h Volume', formatPrice(data.volume24h, currency)))
-        console.log(formatInfoLine('Market Cap', formatPrice(data.marketCap, currency)))
-        console.log(formatInfoLine('All-Time High', formatPrice(data.ath, currency)))
-        console.log(formatInfoLine('All-Time Low', formatPrice(data.atl, currency)))
+        console.log(formatInfoLine('24h High', formatPrice(data.high24h || data.price, currency)))
+        console.log(formatInfoLine('24h Low', formatPrice(data.low24h || data.price, currency)))
+        console.log(formatInfoLine('24h Volume', formatPrice(data.volume24h || 0, currency)))
+        console.log(formatInfoLine('Market Cap', formatPrice(data.marketCap || 0, currency)))
+        console.log(formatInfoLine('All-Time High', formatPrice(data.ath || data.price, currency)))
+        console.log(formatInfoLine('All-Time Low', formatPrice(data.atl || data.price, currency)))
         console.log('')
-        console.log(formatInfoLine('Updated', formatTimestamp(data.lastUpdated)))
+        console.log(formatInfoLine('Updated', formatTimestamp(data.timestamp)))
         console.log(formatInfoLine('Latency', `${result.executionTime}ms`))
       }
     } else {

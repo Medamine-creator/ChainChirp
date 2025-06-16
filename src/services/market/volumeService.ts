@@ -1,4 +1,4 @@
-import { coingecko } from '@/services/apiClient'
+import { fetchWithFallback } from '@/services/apiClient'
 import type {
   VolumeData,
   Currency,
@@ -11,10 +11,6 @@ import type {
 // =============================================================================
 
 const VOLUME_CACHE_TTL = 60 * 1000 // 1 minute
-const ENDPOINTS = {
-  marketData: '/coins/bitcoin',
-  exchanges : '/coins/bitcoin/tickers',
-} as const
 
 interface VolumeCache {
   data     : VolumeData
@@ -34,7 +30,7 @@ interface ExchangeVolume {
 
 export class VolumeService implements BaseService {
   readonly name = 'VolumeService'
-  readonly endpoints = [ ENDPOINTS.marketData, ENDPOINTS.exchanges ]
+  readonly endpoints = [ '/simple/price', '/coins/bitcoin' ]
 
   private cache = new Map<string, VolumeCache>()
 
@@ -52,23 +48,36 @@ export class VolumeService implements BaseService {
     }
 
     try {
-      const data = await coingecko<unknown>(ENDPOINTS.marketData, {
-        localization  : false,
-        tickers       : false,
-        market_data   : true,
-        community_data: false,
-        developer_data: false,
-        sparkline     : false,
-      })
+      // Try simple price endpoint first (includes volume data)
+      const data = await fetchWithFallback<{ bitcoin: { [key: string]: number } }>(
+        '/simple/price',
+        {
+          ids                    : 'bitcoin',
+          vs_currencies          : currency,
+          include_24hr_vol       : true,
+          include_24hr_change    : true,
+          include_last_updated_at: true,
+        },
+        {
+          providers: [ 'coingecko', 'coinmarketcap', 'binance', 'coinbase' ]
+        }
+      )
 
-      const marketData = data as Record<string, unknown>
+      const bitcoinData = data.bitcoin
+      if (!bitcoinData) {
+        throw new Error('Invalid volume data: bitcoin data not found')
+      }
+
+      const volume24h = bitcoinData[`${currency}_24h_vol`] || bitcoinData.usd_24h_vol || 0
+      const volumeChange = this.calculateVolumeChange(bitcoinData, currency)
+      const volumeChangePercent = this.calculateVolumeChangePercent(bitcoinData, currency)
 
       const volumeData: VolumeData = {
-        volume24h             : this.getVolumeForCurrency(marketData.total_volume, currency),
-        volumeChange24h       : this.calculateVolumeChange(marketData),
-        volumeChangePercent24h: this.calculateVolumeChangePercent(marketData),
+        volume24h,
+        volumeChange24h       : volumeChange,
+        volumeChangePercent24h: volumeChangePercent,
         currency,
-        timestamp             : new Date((marketData.last_updated as string) || Date.now()),
+        timestamp             : new Date(bitcoinData.last_updated_at ? bitcoinData.last_updated_at * 1000 : Date.now()),
       }
 
       // Cache the result
@@ -79,9 +88,58 @@ export class VolumeService implements BaseService {
 
       return volumeData
     } catch (error) {
-      throw new Error(
-        `Failed to fetch volume data: ${error instanceof Error ? error.message : 'Unknown error'}`,
-      )
+      // Fallback to detailed endpoint
+      try {
+        const detailedData = await fetchWithFallback<{
+          market_data: {
+            total_volume               : { [key: string]: number }
+            price_change_percentage_24h: number
+          }
+          last_updated: string
+        }>(
+          '/coins/bitcoin',
+          {
+            localization  : false,
+            tickers       : false,
+            market_data   : true,
+            community_data: false,
+            developer_data: false,
+            sparkline     : false,
+          },
+          {
+            providers: [ 'coingecko', 'coinmarketcap' ]
+          }
+        )
+
+        const marketData = detailedData.market_data
+        if (!marketData) {
+          throw new Error('Invalid volume data: market_data not found')
+        }
+
+        const volume24h = marketData.total_volume[currency] || marketData.total_volume.usd || 0
+        const volumeChange = this.calculateVolumeChangeFromPrice(volume24h, marketData.price_change_percentage_24h)
+        const volumeChangePercent = marketData.price_change_percentage_24h * 0.8 // Volume correlates with price but less volatile
+
+        const volumeData: VolumeData = {
+          volume24h,
+          volumeChange24h       : volumeChange,
+          volumeChangePercent24h: volumeChangePercent,
+          currency,
+          timestamp             : new Date(detailedData.last_updated || Date.now()),
+        }
+
+        // Cache the result
+        this.cache.set(cacheKey, {
+          data     : volumeData,
+          timestamp: Date.now(),
+        })
+
+        return volumeData
+      } catch {
+        throw new Error(
+          `Failed to fetch volume data: ${error instanceof Error ? error.message : 'Unknown error'}`,
+        )
+      }
     }
   }
 
@@ -114,7 +172,7 @@ export class VolumeService implements BaseService {
   }
 
   // ===========================================================================
-  // Exchange Volume Methods
+  // Exchange Volume Methods (CoinGecko only for now)
   // ===========================================================================
 
   async getTopExchangeVolumes(
@@ -122,7 +180,7 @@ export class VolumeService implements BaseService {
     limit: number = 10,
   ): Promise<ExchangeVolume[]> {
     try {
-      const data = await coingecko<{
+      const data = await fetchWithFallback<{
         tickers: Array<{
           market          : { name: string }
           base            : string
@@ -131,7 +189,13 @@ export class VolumeService implements BaseService {
           converted_volume: { [key: string]: number }
           trust_score     : string
         }>
-      }>(ENDPOINTS.exchanges)
+      }>(
+        '/coins/bitcoin/tickers',
+        {},
+        {
+          providers: [ 'coingecko' ] // Only CoinGecko has tickers endpoint
+        }
+      )
 
       const volumes: ExchangeVolume[] = data.tickers
         .filter((ticker) => ticker.base === 'BTC')
@@ -185,13 +249,16 @@ export class VolumeService implements BaseService {
     days: number = 7,
   ): Promise<number[]> {
     try {
-      const data = await coingecko<{ total_volumes: [number, number][] }>(
+      const data = await fetchWithFallback<{ total_volumes: [number, number][] }>(
         '/coins/bitcoin/market_chart',
         {
           vs_currency: currency,
           days       : days.toString(),
           interval   : days <= 1 ? 'hourly' : 'daily',
         },
+        {
+          providers: [ 'coingecko', 'binance' ]
+        }
       )
 
       if (!data.total_volumes || !Array.isArray(data.total_volumes)) {
@@ -303,19 +370,33 @@ export class VolumeService implements BaseService {
   // Private Helper Methods
   // ===========================================================================
 
-  private calculateVolumeChange(data: Record<string, unknown>): number {
-    // CoinGecko doesn't provide direct volume change, estimate from price change
-    const totalVolumeUsd = this.getVolumeForCurrency(data.total_volume, 'usd')
-    const priceChangePercent = (data.price_change_percentage_24h as number) || 0
-    const volumeChange = totalVolumeUsd * (priceChangePercent / 100)
-    return Number(volumeChange.toFixed(0))
+  private calculateVolumeChange(data: Record<string, number>, currency: string): number {
+    // Try to get direct volume change, fallback to price-based estimation
+    const volumeChange = data[`${currency}_24h_vol_change`] || data.usd_24h_vol_change
+    if (volumeChange !== undefined) {
+      return volumeChange
+    }
+
+    // Estimate from price change
+    const volume = data[`${currency}_24h_vol`] || data.usd_24h_vol || 0
+    const priceChangePercent = data[`${currency}_24h_change`] || data.usd_24h_change || 0
+    return volume * (priceChangePercent / 100) * 0.8 // Volume correlates but is less volatile
   }
 
-  private calculateVolumeChangePercent(data: Record<string, unknown>): number {
-    // Estimate volume change percentage
-    const priceChangePercent = (data.price_change_percentage_24h as number) || 0
-    const changePercent = priceChangePercent * 0.8 // Volume usually correlates but is less volatile
-    return Number(changePercent.toFixed(2))
+  private calculateVolumeChangePercent(data: Record<string, number>, currency: string): number {
+    // Try to get direct volume change percentage
+    const volumeChangePercent = data[`${currency}_24h_vol_change_percent`] || data.usd_24h_vol_change_percent
+    if (volumeChangePercent !== undefined) {
+      return volumeChangePercent
+    }
+
+    // Estimate from price change
+    const priceChangePercent = data[`${currency}_24h_change`] || data.usd_24h_change || 0
+    return priceChangePercent * 0.8 // Volume usually correlates but is less volatile
+  }
+
+  private calculateVolumeChangeFromPrice(volume: number, priceChangePercent: number): number {
+    return volume * (priceChangePercent / 100) * 0.8
   }
 
   private calculateVolatility(volumes: number[]): number {
@@ -326,13 +407,6 @@ export class VolumeService implements BaseService {
     const volatility = Math.sqrt(variance) / mean
 
     return Number(volatility.toFixed(4))
-  }
-
-  private getVolumeForCurrency(data: unknown, currency: string): number {
-    if (!data || typeof data !== 'object') return 0
-    
-    const volumeData = data as Record<string, number>
-    return volumeData[currency] || volumeData.usd || 0
   }
 }
 

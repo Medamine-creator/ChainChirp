@@ -1,26 +1,26 @@
-import { coingecko } from '@/services/apiClient'
+import { fetchWithFallback } from '@/services/apiClient'
 import type {
-  CoinGeckoSimplePrice,
-  CoinGeckoMarketData,
   MarketData,
-  PriceChangeData,
   Currency,
   BaseService,
   CommandResult,
 } from '@/types'
+
+// Simple price data interface
+interface PriceData {
+  price    : number
+  currency : Currency
+  timestamp: Date
+}
 
 // =============================================================================
 // Price Service Configuration
 // =============================================================================
 
 const PRICE_CACHE_TTL = 30 * 1000 // 30 seconds
-const ENDPOINTS = {
-  simplePrice: '/simple/price',
-  marketData : '/coins/bitcoin',
-} as const
 
 interface PriceCache {
-  data     : MarketData
+  data     : PriceData
   timestamp: number
 }
 
@@ -30,44 +30,16 @@ interface PriceCache {
 
 export class PriceService implements BaseService {
   readonly name = 'PriceService'
-  readonly endpoints = [
-    ENDPOINTS.simplePrice,
-    ENDPOINTS.marketData,
-  ]
+  readonly endpoints = [ '/simple/price', '/coins/bitcoin' ]
 
   private cache = new Map<string, PriceCache>()
-  private previousPrices = new Map<Currency, number>()
 
   // ===========================================================================
   // Core Price Methods
   // ===========================================================================
 
-  async getCurrentPrice(currency: Currency = 'usd'): Promise<number> {
-    try {
-      const data = await coingecko<CoinGeckoSimplePrice>(ENDPOINTS.simplePrice, {
-        ids                : 'bitcoin',
-        vs_currencies      : currency,
-        include_24hr_change: false,
-      })
-
-      const price = data.bitcoin[currency]
-      if (typeof price !== 'number') {
-        throw new Error(`Invalid price data for currency: ${currency}`)
-      }
-
-      // Store previous price for change calculations
-      this.previousPrices.set(currency, price)
-
-      return price
-    } catch (error) {
-      throw new Error(
-        `Failed to fetch current price: ${error instanceof Error ? error.message : 'Unknown error'}`,
-      )
-    }
-  }
-
-  async getMarketData(currency: Currency = 'usd'): Promise<MarketData> {
-    const cacheKey = `market-${currency}`
+  async getCurrentPrice(currency: Currency = 'usd'): Promise<PriceData> {
+    const cacheKey = `price-${currency}`
     const cached = this.cache.get(cacheKey)
 
     // Return cached data if still valid
@@ -76,74 +48,186 @@ export class PriceService implements BaseService {
     }
 
     try {
-      const data = await coingecko<CoinGeckoMarketData[]>(ENDPOINTS.marketData, {
-        localization  : false,
-        tickers       : false,
-        market_data   : true,
-        community_data: false,
-        developer_data: false,
-        sparkline     : true,
-      })
+      // Try simple price endpoint first (faster)
+      const data = await fetchWithFallback<{ bitcoin: { [key: string]: number } }>(
+        '/simple/price',
+        {
+          ids                    : 'bitcoin',
+          vs_currencies          : currency,
+          include_market_cap     : true,
+          include_24hr_vol       : true,
+          include_24hr_change    : true,
+          include_last_updated_at: true,
+        },
+        {
+          providers: [ 'coingecko', 'binance', 'coinbase', 'kraken' ]
+        }
+      )
 
-      if (!data || !Array.isArray(data) || data.length === 0) {
-        throw new Error('Invalid market data response')
+      const bitcoinData = data.bitcoin
+      if (!bitcoinData) {
+        throw new Error('Invalid price data: bitcoin data not found')
       }
 
-      const marketInfo = data[0]
-      if (!marketInfo) {
-        throw new Error('No market data available')
+      const priceData: PriceData = {
+        price    : bitcoinData[currency] || bitcoinData.usd,
+        currency,
+        timestamp: new Date(bitcoinData.last_updated_at ? bitcoinData.last_updated_at * 1000 : Date.now()),
       }
-      
-      const marketData = this.transformMarketData(marketInfo, currency)
 
       // Cache the result
       this.cache.set(cacheKey, {
-        data     : marketData,
+        data     : priceData,
         timestamp: Date.now(),
       })
 
-      return marketData
+      return priceData
     } catch (error) {
-      throw new Error(
-        `Failed to fetch market data: ${error instanceof Error ? error.message : 'Unknown error'}`,
-      )
+      // Fallback to detailed endpoint if simple price fails
+      try {
+        const detailedData = await this.getDetailedPrice(currency)
+        return {
+          price    : detailedData.price,
+          currency : detailedData.currency,
+          timestamp: detailedData.timestamp,
+        }
+      } catch (fallbackError) {
+        throw new Error(
+          `Failed to fetch current price: ${error instanceof Error ? error.message : 'Unknown error'}`,
+        )
+      }
     }
   }
 
-  async getPriceChange(currency: Currency = 'usd'): Promise<PriceChangeData> {
+  async getDetailedPrice(currency: Currency = 'usd'): Promise<PriceData & {
+    marketCap         : number
+    volume24h         : number
+    change24h         : number
+    changePercent24h  : number
+    high24h?          : number
+    low24h?           : number
+    ath?              : number
+    athDate?          : Date
+    atl?              : number
+    atlDate?          : Date
+    athChangePercent? : number
+    atlChangePercent? : number
+    circulatingSupply?: number
+    totalSupply?      : number
+    maxSupply?        : number
+  }> {
+    const cacheKey = `detailed-${currency}`
+    const cached = this.cache.get(cacheKey)
+
+    // Return cached data if still valid
+    if (cached && Date.now() - cached.timestamp < PRICE_CACHE_TTL) {
+      return cached.data as PriceData & {
+        marketCap         : number
+        volume24h         : number
+        change24h         : number
+        changePercent24h  : number
+        high24h?          : number
+        low24h?           : number
+        ath?              : number
+        athDate?          : Date
+        atl?              : number
+        atlDate?          : Date
+        athChangePercent? : number
+        atlChangePercent? : number
+        circulatingSupply?: number
+        totalSupply?      : number
+        maxSupply?        : number
+      }
+    }
+
     try {
-      const data = await coingecko<CoinGeckoSimplePrice>(ENDPOINTS.simplePrice, {
-        ids                : 'bitcoin',
-        vs_currencies      : currency,
-        include_24hr_change: true,
-        include_7d_change  : true,
-        include_30d_change : true,
-        include_1h_change  : true,
+      const data = await fetchWithFallback<{
+        market_data: {
+          current_price              : { [key: string]: number }
+          market_cap                 : { [key: string]: number }
+          total_volume               : { [key: string]: number }
+          price_change_24h           : number
+          price_change_percentage_24h: number
+          high_24h                   : { [key: string]: number }
+          low_24h                    : { [key: string]: number }
+          ath                        : { [key: string]: number }
+          ath_date                   : { [key: string]: string }
+          atl                        : { [key: string]: number }
+          atl_date                   : { [key: string]: string }
+          ath_change_percentage      : { [key: string]: number }
+          atl_change_percentage      : { [key: string]: number }
+          circulating_supply         : number
+          total_supply               : number
+          max_supply                 : number
+        }
+        last_updated: string
+      }>(
+        '/coins/bitcoin',
+        {
+          localization  : false,
+          tickers       : false,
+          market_data   : true,
+          community_data: false,
+          developer_data: false,
+          sparkline     : false,
+        },
+        {
+          providers: [ 'coingecko', 'coinmarketcap' ]
+        }
+      )
+
+      const marketData = data.market_data
+      if (!marketData) {
+        throw new Error('Invalid detailed price data: market_data not found')
+      }
+
+      const priceData: PriceData & {
+        marketCap         : number
+        volume24h         : number
+        change24h         : number
+        changePercent24h  : number
+        high24h?          : number
+        low24h?           : number
+        ath?              : number
+        athDate?          : Date
+        atl?              : number
+        atlDate?          : Date
+        athChangePercent? : number
+        atlChangePercent? : number
+        circulatingSupply?: number
+        totalSupply?      : number
+        maxSupply?        : number
+      } = {
+        price            : marketData.current_price[currency] || marketData.current_price.usd,
+        currency,
+        timestamp        : new Date(data.last_updated || Date.now()),
+        marketCap        : marketData.market_cap[currency] || marketData.market_cap.usd,
+        volume24h        : marketData.total_volume[currency] || marketData.total_volume.usd,
+        change24h        : marketData.price_change_24h,
+        changePercent24h : marketData.price_change_percentage_24h,
+        high24h          : marketData.high_24h[currency] || marketData.high_24h.usd,
+        low24h           : marketData.low_24h[currency] || marketData.low_24h.usd,
+        ath              : marketData.ath[currency] || marketData.ath.usd,
+        athDate          : new Date(marketData.ath_date[currency] || marketData.ath_date.usd),
+        atl              : marketData.atl[currency] || marketData.atl.usd,
+        atlDate          : new Date(marketData.atl_date[currency] || marketData.atl_date.usd),
+        athChangePercent : marketData.ath_change_percentage[currency] || marketData.ath_change_percentage.usd,
+        atlChangePercent : marketData.atl_change_percentage[currency] || marketData.atl_change_percentage.usd,
+        circulatingSupply: marketData.circulating_supply,
+        totalSupply      : marketData.total_supply,
+        maxSupply        : marketData.max_supply,
+      }
+
+      // Cache the result
+      this.cache.set(cacheKey, {
+        data     : priceData,
+        timestamp: Date.now(),
       })
 
-      const current = data.bitcoin[currency]
-      if (typeof current !== 'number') {
-        throw new Error(`Invalid price data for currency: ${currency}`)
-      }
-
-      // Get additional change data from extended response
-      const extendedData = data.bitcoin as Record<string, number>
-      
-      return {
-        current         : current,
-        change1h        : extendedData[`${currency}_1h_change`] || 0,
-        change24h       : extendedData[`${currency}_24h_change`] || 0,
-        change7d        : extendedData[`${currency}_7d_change`] || 0,
-        change30d       : extendedData[`${currency}_30d_change`] || 0,
-        changePercent1h : extendedData[`${currency}_1h_vol_change`] || 0,
-        changePercent24h: extendedData[`${currency}_24h_vol_change`] || 0,
-        changePercent7d : extendedData[`${currency}_7d_vol_change`] || 0,
-        changePercent30d: extendedData[`${currency}_30d_vol_change`] || 0,
-        currency,
-      }
+      return priceData
     } catch (error) {
       throw new Error(
-        `Failed to fetch price changes: ${error instanceof Error ? error.message : 'Unknown error'}`,
+        `Failed to fetch detailed price data: ${error instanceof Error ? error.message : 'Unknown error'}`,
       )
     }
   }
@@ -157,13 +241,16 @@ export class PriceService implements BaseService {
     days: number = 7,
   ): Promise<number[]> {
     try {
-      const data = await coingecko<{ prices: [number, number][] }>(
+      const data = await fetchWithFallback<{ prices: [number, number][] }>(
         '/coins/bitcoin/market_chart',
         {
           vs_currency: currency,
           days       : days.toString(),
           interval   : days <= 1 ? 'hourly' : 'daily',
         },
+        {
+          providers: [ 'coingecko', 'binance' ]
+        }
       )
 
       if (!data.prices || !Array.isArray(data.prices)) {
@@ -173,56 +260,7 @@ export class PriceService implements BaseService {
       return data.prices.map(([ , price ]) => price)
     } catch (error) {
       throw new Error(
-        `Failed to fetch historical prices: ${error instanceof Error ? error.message : 'Unknown error'}`,
-      )
-    }
-  }
-
-  // ===========================================================================
-  // Price Comparison Methods
-  // ===========================================================================
-
-  calculatePriceChange(current: number, previous: number): {
-    absolute  : number
-    percentage: number
-  } {
-    const absolute = current - previous
-    const percentage = previous !== 0 ? (absolute / previous) * 100 : 0
-
-    return {
-      absolute  : Number(absolute.toFixed(2)),
-      percentage: Number(percentage.toFixed(2)),
-    }
-  }
-
-  getPreviousPrice(currency: Currency): number | undefined {
-    return this.previousPrices.get(currency)
-  }
-
-  // ===========================================================================
-  // Multi-Currency Methods
-  // ===========================================================================
-
-  async getMultiCurrencyPrices(currencies: Currency[]): Promise<Record<Currency, number>> {
-    try {
-      const data = await coingecko<CoinGeckoSimplePrice>(ENDPOINTS.simplePrice, {
-        ids          : 'bitcoin',
-        vs_currencies: currencies.join(','),
-      })
-
-      const prices: Record<string, number> = {}
-      for (const currency of currencies) {
-        const price = data.bitcoin[currency]
-        if (typeof price === 'number') {
-          prices[currency] = price
-          this.previousPrices.set(currency, price)
-        }
-      }
-
-      return prices as Record<Currency, number>
-    } catch (error) {
-      throw new Error(
-        `Failed to fetch multi-currency prices: ${error instanceof Error ? error.message : 'Unknown error'}`,
+        `Failed to fetch historical price: ${error instanceof Error ? error.message : 'Unknown error'}`,
       )
     }
   }
@@ -253,31 +291,6 @@ export class PriceService implements BaseService {
       keys: Array.from(this.cache.keys()),
     }
   }
-
-  // ===========================================================================
-  // Private Helper Methods
-  // ===========================================================================
-
-  private transformMarketData(
-    raw: CoinGeckoMarketData,
-    currency: Currency,
-  ): MarketData {
-    return {
-      price           : raw.current_price,
-      currency,
-      change24h       : raw.price_change_24h,
-      changePercent24h: raw.price_change_percentage_24h,
-      change7d        : raw.price_change_percentage_7d,
-      change30d       : raw.price_change_percentage_30d,
-      marketCap       : raw.market_cap,
-      volume24h       : raw.total_volume,
-      high24h         : raw.high_24h,
-      low24h          : raw.low_24h,
-      ath             : raw.ath,
-      atl             : raw.atl,
-      lastUpdated     : new Date(raw.last_updated),
-    }
-  }
 }
 
 // =============================================================================
@@ -294,16 +307,16 @@ export function getPriceService(): PriceService {
 }
 
 // Convenience functions for easy usage
-export async function getCurrentBitcoinPrice(currency: Currency = 'usd'): Promise<CommandResult<number>> {
+export async function getBitcoinPrice(currency: Currency = 'usd'): Promise<CommandResult<PriceData>> {
   const startTime = Date.now()
-  
+
   try {
     const service = getPriceService()
-    const price = await service.getCurrentPrice(currency)
-    
+    const priceData = await service.getCurrentPrice(currency)
+
     return {
       success      : true,
-      data         : price,
+      data         : priceData,
       timestamp    : new Date(),
       executionTime: Date.now() - startTime,
     }
@@ -317,16 +330,16 @@ export async function getCurrentBitcoinPrice(currency: Currency = 'usd'): Promis
   }
 }
 
-export async function getBitcoinMarketData(currency: Currency = 'usd'): Promise<CommandResult<MarketData>> {
+export async function getBitcoinDetailedPrice(currency: Currency = 'usd'): Promise<CommandResult<PriceData>> {
   const startTime = Date.now()
-  
+
   try {
     const service = getPriceService()
-    const marketData = await service.getMarketData(currency)
-    
+    const priceData = await service.getDetailedPrice(currency)
+
     return {
       success      : true,
-      data         : marketData,
+      data         : priceData,
       timestamp    : new Date(),
       executionTime: Date.now() - startTime,
     }
