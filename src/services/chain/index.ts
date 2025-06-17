@@ -34,8 +34,12 @@ export {
   getCurrentHashrate,
 } from './hashrateService'
 
-// Export service types
-export type { BlockData, MempoolInfo, FeeEstimate, HashrateData } from '@/types'
+// Export Halving Service
+export {
+  HalvingService,
+  getHalvingService,
+  getCurrentHalving,
+} from './halvingService'
 
-// TODO: Add other chain services as they are implemented
-// - HalvingService
+// Export service types
+export type { BlockData, MempoolInfo, FeeEstimate, HashrateData, HalvingData } from '@/types'

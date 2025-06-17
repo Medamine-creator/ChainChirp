@@ -7,12 +7,14 @@ export { blockCommand } from './block'
 export { mempoolCommand } from './mempool'
 export { feesCommand } from './fees'
 export { hashrateCommand } from './hashrate'
+export { halvingCommand } from './halving'
 
 // Export command option types
 export type { BlockCommandOptions } from './block'
 export type { MempoolCommandOptions } from './mempool'
 export type { FeesCommandOptions } from './fees'
 export type { HashrateCommandOptions } from './hashrate'
+export type { HalvingCommandOptions } from './halving'
 
 // =============================================================================
 // Command Registry for CLI Integration
@@ -32,18 +34,18 @@ export interface ChainCommandHandlers {
     history?: number
   }) => Promise<void>
   hashrate: (options?: BaseCommandOptions) => Promise<void>
-  // TODO: Add other chain commands as they are implemented
-  // halving: (options?: BaseCommandOptions & { history?: boolean }) => Promise<void>
+  halving : (options?: BaseCommandOptions) => Promise<void>
 }
 
 // Create command registry
-import { blockCommand, mempoolCommand, feesCommand, hashrateCommand } from '.'
+import { blockCommand, mempoolCommand, feesCommand, hashrateCommand, halvingCommand } from '.'
 
 export const chainCommands: ChainCommandHandlers = {
   block   : blockCommand,
   mempool : mempoolCommand,
   fees    : feesCommand,
   hashrate: hashrateCommand,
+  halving : halvingCommand,
 }
 
 // =============================================================================
@@ -94,5 +96,14 @@ export const chainCommandDescriptions = {
       'chainchirp hashrate --watch --json',
     ],
   },
-  // TODO: Add descriptions for other chain commands
+  halving: {
+    description: 'Get Bitcoin halving countdown and reward information',
+    usage      : 'chainchirp halving [options]',
+    examples   : [
+      'chainchirp halving',
+      'chainchirp halving --watch',
+      'chainchirp halving --json',
+      'chainchirp halving --watch --json',
+    ],
+  },
 } as const

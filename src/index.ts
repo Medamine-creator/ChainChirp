@@ -213,6 +213,22 @@ cli
     }
   })
 
+// Halving command
+cli
+  .command('halving', chainCommandDescriptions.halving.description)
+  .action(async (options) => {
+    try {
+      await chainCommands.halving({
+        json    : options.json,
+        watch   : options.watch,
+        interval: parseInt(options.interval) || 120,
+      })
+    } catch (error) {
+      console.error(chalk.red('✕ Halving command failed:'), error instanceof Error ? error.message : 'Unknown error')
+      process.exit(1)
+    }
+  })
+
 // =============================================================================
 // Default Command (Show Help)
 // =============================================================================
