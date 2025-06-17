@@ -6,11 +6,13 @@
 export { blockCommand } from './block'
 export { mempoolCommand } from './mempool'
 export { feesCommand } from './fees'
+export { hashrateCommand } from './hashrate'
 
 // Export command option types
 export type { BlockCommandOptions } from './block'
 export type { MempoolCommandOptions } from './mempool'
 export type { FeesCommandOptions } from './fees'
+export type { HashrateCommandOptions } from './hashrate'
 
 // =============================================================================
 // Command Registry for CLI Integration
@@ -29,18 +31,19 @@ export interface ChainCommandHandlers {
   fees: (options?: BaseCommandOptions & { 
     history?: number
   }) => Promise<void>
+  hashrate: (options?: BaseCommandOptions) => Promise<void>
   // TODO: Add other chain commands as they are implemented
-  // hashrate: (options?: BaseCommandOptions & { detailed?: boolean }) => Promise<void>
   // halving: (options?: BaseCommandOptions & { history?: boolean }) => Promise<void>
 }
 
 // Create command registry
-import { blockCommand, mempoolCommand, feesCommand } from '.'
+import { blockCommand, mempoolCommand, feesCommand, hashrateCommand } from '.'
 
 export const chainCommands: ChainCommandHandlers = {
-  block  : blockCommand,
-  mempool: mempoolCommand,
-  fees   : feesCommand,
+  block   : blockCommand,
+  mempool : mempoolCommand,
+  fees    : feesCommand,
+  hashrate: hashrateCommand,
 }
 
 // =============================================================================
@@ -79,6 +82,16 @@ export const chainCommandDescriptions = {
       'chainchirp fees --watch',
       'chainchirp fees --json',
       'chainchirp fees --watch --json',
+    ],
+  },
+  hashrate: {
+    description: 'Get Bitcoin network hashrate and difficulty adjustment progress',
+    usage      : 'chainchirp hashrate [options]',
+    examples   : [
+      'chainchirp hashrate',
+      'chainchirp hashrate --watch',
+      'chainchirp hashrate --json',
+      'chainchirp hashrate --watch --json',
     ],
   },
   // TODO: Add descriptions for other chain commands

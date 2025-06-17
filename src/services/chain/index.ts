@@ -27,9 +27,15 @@ export {
   getFeeHistory,
 } from './feesService'
 
+// Export Hashrate Service
+export {
+  HashrateService,
+  getHashrateService,
+  getCurrentHashrate,
+} from './hashrateService'
+
 // Export service types
-export type { BlockData, MempoolInfo, FeeEstimate } from '@/types'
+export type { BlockData, MempoolInfo, FeeEstimate, HashrateData } from '@/types'
 
 // TODO: Add other chain services as they are implemented
-// - HashrateService
 // - HalvingService

@@ -197,6 +197,22 @@ cli
     }
   })
 
+// Hashrate command
+cli
+  .command('hashrate', chainCommandDescriptions.hashrate.description)
+  .action(async (options) => {
+    try {
+      await chainCommands.hashrate({
+        json    : options.json,
+        watch   : options.watch,
+        interval: parseInt(options.interval) || 60,
+      })
+    } catch (error) {
+      console.error(chalk.red('✕ Hashrate command failed:'), error instanceof Error ? error.message : 'Unknown error')
+      process.exit(1)
+    }
+  })
+
 // =============================================================================
 // Default Command (Show Help)
 // =============================================================================
