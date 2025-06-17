@@ -179,6 +179,24 @@ cli
     }
   })
 
+// Fees command
+cli
+  .command('fees', chainCommandDescriptions.fees.description)
+  .option('--history <hours>', 'Show fee history for N hours')
+  .action(async (options) => {
+    try {
+      await chainCommands.fees({
+        history : options.history ? parseInt(options.history) : undefined,
+        json    : options.json,
+        watch   : options.watch,
+        interval: parseInt(options.interval) || 30,
+      })
+    } catch (error) {
+      console.error(chalk.red('✕ Fees command failed:'), error instanceof Error ? error.message : 'Unknown error')
+      process.exit(1)
+    }
+  })
+
 // =============================================================================
 // Default Command (Show Help)
 // =============================================================================

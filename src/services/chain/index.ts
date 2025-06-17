@@ -19,10 +19,17 @@ export {
   getCongestionLevel,
 } from './mempoolService'
 
+// Export Fees Service
+export {
+  FeesService,
+  getFeesService,
+  getRecommendedFees,
+  getFeeHistory,
+} from './feesService'
+
 // Export service types
-export type { BlockData, MempoolInfo } from '@/types'
+export type { BlockData, MempoolInfo, FeeEstimate } from '@/types'
 
 // TODO: Add other chain services as they are implemented
-// - FeesService  
 // - HashrateService
 // - HalvingService

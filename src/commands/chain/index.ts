@@ -5,10 +5,12 @@
 // Export all chain command handlers
 export { blockCommand } from './block'
 export { mempoolCommand } from './mempool'
+export { feesCommand } from './fees'
 
 // Export command option types
 export type { BlockCommandOptions } from './block'
 export type { MempoolCommandOptions } from './mempool'
+export type { FeesCommandOptions } from './fees'
 
 // =============================================================================
 // Command Registry for CLI Integration
@@ -24,18 +26,21 @@ export interface ChainCommandHandlers {
   mempool: (options?: BaseCommandOptions & { 
     detailed?: boolean 
   }) => Promise<void>
+  fees: (options?: BaseCommandOptions & { 
+    history?: number
+  }) => Promise<void>
   // TODO: Add other chain commands as they are implemented
-  // fees   : (options?: BaseCommandOptions & { history?: number }) => Promise<void>
   // hashrate: (options?: BaseCommandOptions & { detailed?: boolean }) => Promise<void>
   // halving: (options?: BaseCommandOptions & { history?: boolean }) => Promise<void>
 }
 
 // Create command registry
-import { blockCommand, mempoolCommand } from '.'
+import { blockCommand, mempoolCommand, feesCommand } from '.'
 
 export const chainCommands: ChainCommandHandlers = {
   block  : blockCommand,
   mempool: mempoolCommand,
+  fees   : feesCommand,
 }
 
 // =============================================================================
@@ -63,6 +68,17 @@ export const chainCommandDescriptions = {
       'chainchirp mempool --watch',
       'chainchirp mempool --json',
       'chainchirp mempool --watch --detailed',
+    ],
+  },
+  fees: {
+    description: 'Get Bitcoin fee estimates for transaction prioritization',
+    usage      : 'chainchirp fees [options]',
+    examples   : [
+      'chainchirp fees',
+      'chainchirp fees --history 24',
+      'chainchirp fees --watch',
+      'chainchirp fees --json',
+      'chainchirp fees --watch --json',
     ],
   },
   // TODO: Add descriptions for other chain commands
