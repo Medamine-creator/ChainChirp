@@ -34,7 +34,7 @@
   "files": [
     "dist",
     "README.md",
-    "package.json"
+    "LICENSE"
   ],
   "bin": {
     "chainchirp": "./dist/index.js"
@@ -70,6 +70,7 @@
     "lint": "eslint src --ext .ts --ext .d.ts --fix",
     "test": "bun test",
     "build": "bun build src/index.ts --outdir dist --target node --format esm --external axios --external chalk --external cac --external gradient-string --external ora",
+    "prepublishOnly": "npm run build",
     "prepare": "husky install"
   }
 }

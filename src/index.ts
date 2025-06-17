@@ -318,7 +318,7 @@ cli.parse = (argv?: string[]) => {
   }
   
   // Check for help flags (only global, not command-specific)
-  if (args.includes('--help') || args.includes('-h')) {
+  if (args.includes('--help') || args.includes('-h') || args.includes('--h')) {
     // If there's a command before the help flag, let cac handle it
     const commandExists = args.some(arg => 
       !arg.startsWith('-') && 
