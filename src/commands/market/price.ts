@@ -1,4 +1,3 @@
-import ora from 'ora'
 import {
   getBitcoinPrice,
   getBitcoinDetailedPrice,
@@ -6,11 +5,10 @@ import {
 import {
   formatPrice,
   formatPriceChange,
-  formatSuccessMessage,
-  formatErrorMessage,
-  formatInfoLine,
   formatTimestamp,
+  symbol,
 } from '@/utils/formatter'
+import logger from '@/utils/logger'
 import {
   withWatch,
   withJson,
@@ -49,65 +47,73 @@ async function executePriceCommand(options: {
 }
 
 // =============================================================================
-// Human-Readable Output Renderers
+// Human-Readable Output Renderers (Enhanced)
 // =============================================================================
 
 function renderPriceData(data: any, result: CommandResult<any>) {
   const formattedPrice = formatPrice(data.price, data.currency)
   
-  console.log('')
-  console.log(formatSuccessMessage('Bitcoin Price'))
-  console.log(`  ${formattedPrice}`)
-  console.log('')
-  console.log(formatInfoLine('Updated', formatTimestamp(result.timestamp)))
-  console.log(formatInfoLine('Latency', `${result.executionTime}ms`))
+  logger.newline()
+  logger.success('Bitcoin Price')
+  logger.renderLine('Price', `${symbol('bitcoin')} ${formattedPrice}`, 'success')
+  logger.newline()
+  logger.renderLine('Updated', formatTimestamp(result.timestamp), 'info')
+  logger.renderLine('Latency', `${result.executionTime}ms`)
 }
 
 function renderDetailedPriceData(data: any, result: CommandResult<any>) {
   const formattedPrice = formatPrice(data.price, data.currency)
   const change24h = formatPriceChange(data.change24h || 0)
   const changePercent24h = formatPriceChange(data.changePercent24h || 0, true)
+  const priceWithChange = `${symbol('bitcoin')} ${formattedPrice} ${change24h} (${changePercent24h})`
 
-  console.log('')
-  console.log(formatSuccessMessage('Bitcoin Market Data'))
-  console.log(`  ${formattedPrice} ${change24h} (${changePercent24h})`)
-  console.log('')
-  console.log(formatInfoLine('24h High', formatPrice(data.high24h || data.price, data.currency)))
-  console.log(formatInfoLine('24h Low', formatPrice(data.low24h || data.price, data.currency)))
-  console.log(formatInfoLine('24h Volume', formatPrice(data.volume24h || 0, data.currency)))
-  console.log(formatInfoLine('Market Cap', formatPrice(data.marketCap || 0, data.currency)))
-  console.log(formatInfoLine('All-Time High', formatPrice(data.ath || data.price, data.currency)))
-  console.log(formatInfoLine('All-Time Low', formatPrice(data.atl || data.price, data.currency)))
-  console.log('')
-  console.log(formatInfoLine('Updated', formatTimestamp(data.timestamp)))
-  console.log(formatInfoLine('Latency', `${result.executionTime}ms`))
+  logger.newline()
+  logger.success('Bitcoin Market Data')
+  logger.renderLine('Price', priceWithChange, 'success')
+  logger.newline()
+  
+  // Market metrics
+  logger.renderLine('24h High', formatPrice(data.high24h || data.price, data.currency))
+  logger.renderLine('24h Low', formatPrice(data.low24h || data.price, data.currency))
+  logger.renderLine('24h Volume', formatPrice(data.volume24h || 0, data.currency))
+  logger.renderLine('Market Cap', formatPrice(data.marketCap || 0, data.currency))
+  logger.renderLine('ATH', formatPrice(data.ath || data.price, data.currency))
+  logger.renderLine('ATL', formatPrice(data.atl || data.price, data.currency))
+  
+  logger.newline()
+  logger.renderLine('Updated', formatTimestamp(data.timestamp), 'info')
+  logger.renderLine('Latency', `${result.executionTime}ms`)
 }
 
 // =============================================================================
-// Watch Mode Renderers
+// Watch Mode Renderers (Enhanced)
 // =============================================================================
 
 const priceWatchRenderer = (data: any, result: CommandResult<any>, previousData?: any) => {
   const currentPrice = extractPrice(data)
   let changeText = ''
+  let priceState: 'success' | 'warning' | 'error' = 'success'
   
   if (previousData) {
     const previousPrice = extractPrice(previousData)
     if (previousPrice !== currentPrice) {
       const change = calculatePriceChange(currentPrice, previousPrice)
       changeText = ` ${formatPriceChange(change.change)} (${formatPriceChange(change.changePercent || 0, true)})`
+      priceState = change.change >= 0 ? 'success' : 'error'
     }
   }
 
   const formattedPrice = formatPrice(currentPrice, data.currency)
+  const priceDisplay = `${symbol('bitcoin')} ${formattedPrice}${changeText}`
   
-  console.log('')
-  console.log(formatSuccessMessage('Bitcoin Price' + changeText))
-  console.log(`  ${formattedPrice}`)
-  console.log('')
-  console.log(formatInfoLine('Updated', formatTimestamp(result.timestamp)))
-  console.log(formatInfoLine('Interval', `${result.timestamp ? 30 : 30}s`))
-  console.log(formatInfoLine('Press', 'Ctrl+C to exit'))
+  logger.clearScreen()
+  logger.newline()
+  logger.watchHeader('Bitcoin Price', 30)
+  logger.renderLine('Price', priceDisplay, priceState)
+  logger.newline()
+  logger.renderLine('Updated', formatTimestamp(result.timestamp), 'info')
+  logger.renderLine('Interval', '30s')
+  logger.watchFooter()
 }
 
 const priceWatchJsonFormatter = createWatchJsonFormatter(
@@ -133,7 +139,7 @@ const jsonPriceCommand = withJson<PriceCommandOptions, any>(
 )(executePriceCommand)
 
 // =============================================================================
-// Main Price Command Handler
+// Main Price Command Handler (Enhanced)
 // =============================================================================
 
 export async function priceCommand(options: PriceCommandOptions = {}): Promise<void> {
@@ -157,16 +163,15 @@ export async function priceCommand(options: PriceCommandOptions = {}): Promise<v
     return
   }
 
-  // Handle human-readable mode
-  let spinner: ReturnType<typeof ora> | undefined
-  spinner = ora('Fetching Bitcoin price...').start()
-
+  // Handle human-readable mode with new logger system
   try {
-    const result = await executePriceCommand({ currency, detailed })
-
-    if (spinner) {
-      spinner.stop()
-    }
+    const result = await logger.withSpinner(
+      () => executePriceCommand({ currency, detailed }),
+      'Fetching Bitcoin price…',
+      {
+        successMessage: undefined, // Don't show success message, we'll render our own
+      }
+    )
 
     if (result.success && result.data) {
       if (detailed) {
@@ -176,18 +181,14 @@ export async function priceCommand(options: PriceCommandOptions = {}): Promise<v
       }
     } else {
       const errorMsg = result.error?.message || 'Unknown error occurred'
-      console.error('')
-      console.error(formatErrorMessage('Failed to fetch price', errorMsg))
+      logger.newline()
+      logger.error('Failed to fetch price', errorMsg)
       process.exit(1)
     }
   } catch (error) {
-    if (spinner) {
-      spinner.stop()
-    }
-
     const errorMsg = error instanceof Error ? error.message : 'Unknown error occurred'
-    console.error('')
-    console.error(formatErrorMessage('Command failed', errorMsg))
+    logger.newline()
+    logger.error('Command failed', errorMsg)
     process.exit(1)
   }
 }

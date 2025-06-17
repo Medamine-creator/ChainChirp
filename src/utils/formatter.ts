@@ -2,30 +2,87 @@ import chalk from 'chalk'
 import type { Currency } from '@/types'
 
 // =============================================================================
-// Formatting Constants
+// Design System - Stripe/Vercel Quality Palette
+// =============================================================================
+
+export const PALETTE = {
+  // Primary text colors
+  primary: chalk.whiteBright,
+  heading: chalk.cyanBright,
+  muted  : chalk.dim,
+  
+  // State colors
+  success: chalk.greenBright,
+  warning: chalk.yellowBright,
+  error  : chalk.redBright,
+  info   : chalk.blueBright,
+  
+  // Accent colors (cyan → magenta → pink progression)
+  cyan   : chalk.cyanBright,
+  magenta: chalk.magentaBright,
+  pink   : chalk.hex('#FF69B4'),
+  
+  // Utility
+  bold: chalk.bold,
+  dim : chalk.dim,
+} as const
+
+// =============================================================================
+// Unicode Symbols (1-column width, reliable across terminals)
 // =============================================================================
 
 export const SYMBOLS = {
-  success: '✓',
-  error  : '✕',
-  info   : '◦',
+  success  : '✔',
+  error    : '✖',
+  warning  : '⚠',
+  info     : 'ℹ',
+  bitcoin  : '₿',
+  lightning: 'ᛋ',
+  
+  // Utility symbols
   arrow  : '→',
   bullet : '•',
   dash   : '─',
-} as const
-
-export const COLORS = {
-  success: chalk.green,
-  error  : chalk.red,
-  warning: chalk.yellow,
-  info   : chalk.blue,
-  muted  : chalk.gray,
-  white  : chalk.white,
-  bold   : chalk.bold,
+  spinner: '⠋⠙⠹⠸⠼⠴⠦⠧⠇⠏',
 } as const
 
 // =============================================================================
-// Price Formatting
+// Core Formatter Functions
+// =============================================================================
+
+/**
+ * Format a metric label with consistent width (12 chars)
+ */
+export function label(text: string): string {
+  return PALETTE.muted(text.padEnd(12))
+}
+
+/**
+ * Format a value with optional color
+ */
+export function value(text: string | number, color?: keyof typeof PALETTE): string {
+  const str = typeof text === 'number' ? text.toString() : text
+  return color ? PALETTE[color](str) : PALETTE.primary(str)
+}
+
+/**
+ * Get Unicode symbol for a given kind
+ */
+export function symbol(kind: keyof typeof SYMBOLS): string {
+  return SYMBOLS[kind]
+}
+
+/**
+ * Strip ANSI escape codes from string (for --json mode)
+ */
+export function stripAnsi(str: string): string {
+  // More comprehensive ANSI escape sequence removal
+  // eslint-disable-next-line no-control-regex
+  return str.replace(/\u001b\[[0-9;]*[mGKHF]/g, '')
+}
+
+// =============================================================================
+// Price Formatting (Enhanced)
 // =============================================================================
 
 export function formatPrice(
@@ -34,26 +91,35 @@ export function formatPrice(
   options: {
     symbol?  : boolean
     decimals?: number
+    compact? : boolean
   } = {}
 ): string {
-  const { symbol = true, decimals = 2 } = options
+  const { symbol: showSymbol = true, decimals = 2, compact = false } = options
 
   if (currency === 'sats') {
-    return formatSats(price)
+    return formatSats(price, compact)
   }
 
   const formatted = new Intl.NumberFormat('en-US', {
-    style                : symbol ? 'currency' : 'decimal',
+    style                : showSymbol ? 'currency' : 'decimal',
     currency             : currency.toUpperCase(),
     minimumFractionDigits: decimals,
     maximumFractionDigits: decimals,
+    notation             : compact ? 'compact' : 'standard',
+    // Add thousand separators for better readability
+    useGrouping          : true,
   }).format(price)
 
   return formatted
 }
 
-export function formatSats(sats: number): string {
-  return new Intl.NumberFormat('en-US').format(sats) + ' sats'
+export function formatSats(sats: number, compact: boolean = false): string {
+  const formatted = new Intl.NumberFormat('en-US', {
+    notation   : compact ? 'compact' : 'standard',
+    useGrouping: true,
+  }).format(sats)
+  
+  return `${formatted} sats`
 }
 
 export function formatPriceChange(
@@ -62,47 +128,42 @@ export function formatPriceChange(
 ): string {
   const prefix = change >= 0 ? '+' : ''
   const suffix = isPercentage ? '%' : ''
-  const color = change >= 0 ? COLORS.success : COLORS.error
+  const color = change >= 0 ? 'success' : 'error'
   
-  return color(`${prefix}${change.toFixed(2)}${suffix}`)
+  return value(`${prefix}${change.toFixed(2)}${suffix}`, color)
 }
 
 // =============================================================================
-// Volume & Market Cap Formatting  
+// Volume & Market Cap Formatting (Enhanced)
 // =============================================================================
 
 export function formatVolume(volume: number, currency: Currency = 'usd'): string {
-  if (volume >= 1e9) {
-    return `${(volume / 1e9).toFixed(2)}B ${currency.toUpperCase()}`
-  } else if (volume >= 1e6) {
-    return `${(volume / 1e6).toFixed(2)}M ${currency.toUpperCase()}`
-  } else if (volume >= 1e3) {
-    return `${(volume / 1e3).toFixed(2)}K ${currency.toUpperCase()}`
-  }
-  return `${volume.toFixed(2)} ${currency.toUpperCase()}`
+  const formatted = new Intl.NumberFormat('en-US', {
+    notation             : 'compact',
+    maximumFractionDigits: 2,
+  }).format(volume)
+  
+  return `${formatted} ${currency.toUpperCase()}`
 }
 
 export function formatMarketCap(marketCap: number, currency: Currency = 'usd'): string {
-  if (marketCap >= 1e12) {
-    return `${(marketCap / 1e12).toFixed(2)}T ${currency.toUpperCase()}`
-  } else if (marketCap >= 1e9) {
-    return `${(marketCap / 1e9).toFixed(2)}B ${currency.toUpperCase()}`
-  } else if (marketCap >= 1e6) {
-    return `${(marketCap / 1e6).toFixed(2)}M ${currency.toUpperCase()}`
-  }
-  return `${marketCap.toFixed(2)} ${currency.toUpperCase()}`
+  const formatted = new Intl.NumberFormat('en-US', {
+    notation             : 'compact',
+    maximumFractionDigits: 2,
+  }).format(marketCap)
+  
+  return `${formatted} ${currency.toUpperCase()}`
 }
 
 // =============================================================================
-// Time Formatting
+// Time Formatting (Enhanced)
 // =============================================================================
 
-export function formatTimestamp(date: Date): string {
+export function formatTimestamp(date: Date = new Date()): string {
   return date.toLocaleString('en-US', {
-    month : 'short',
-    day   : 'numeric',
     hour  : '2-digit',
     minute: '2-digit',
+    second: '2-digit',
     hour12: false,
   })
 }
@@ -115,82 +176,122 @@ export function formatDuration(ms: number): string {
 }
 
 // =============================================================================
-// Output Formatting
+// Status Messages (Stripe/Vercel Style)
 // =============================================================================
 
 export function formatSuccessMessage(title: string, subtitle?: string): string {
-  let message = COLORS.success(SYMBOLS.success) + ' ' + COLORS.bold(title)
+  let message = `${PALETTE.success(SYMBOLS.success)} ${PALETTE.heading(title)}`
   if (subtitle) {
-    message += '\n  ' + COLORS.muted(subtitle)
+    message += `\n${' '.repeat(4)}${PALETTE.muted(subtitle)}`
   }
   return message
 }
 
 export function formatErrorMessage(title: string, subtitle?: string): string {
-  let message = COLORS.error(SYMBOLS.error) + ' ' + COLORS.bold(title)
+  let message = `${PALETTE.error(SYMBOLS.error)} ${PALETTE.heading(title)}`
   if (subtitle) {
-    message += '\n  ' + COLORS.muted(subtitle)
+    message += `\n${' '.repeat(4)}${PALETTE.muted(subtitle)}`
   }
   return message
 }
 
-export function formatInfoLine(label: string, value: string): string {
-  return `  ${COLORS.muted(SYMBOLS.info + ' ' + label + ':')} ${COLORS.white(value)}`
+export function formatWarningMessage(title: string, subtitle?: string): string {
+  let message = `${PALETTE.warning(SYMBOLS.warning)} ${PALETTE.heading(title)}`
+  if (subtitle) {
+    message += `\n${' '.repeat(4)}${PALETTE.muted(subtitle)}`
+  }
+  return message
 }
 
-export function formatKeyValue(key: string, value: string, indent: number = 2): string {
-  const spaces = ' '.repeat(indent)
-  return `${spaces}${COLORS.muted(key)}${COLORS.white(value)}`
+export function formatInfoMessage(title: string, subtitle?: string): string {
+  let message = `${PALETTE.info(SYMBOLS.info)} ${PALETTE.heading(title)}`
+  if (subtitle) {
+    message += `\n${' '.repeat(4)}${PALETTE.muted(subtitle)}`
+  }
+  return message
 }
 
 // =============================================================================
-// Table Formatting
+// Metric Line Formatting (12-char label + value)
+// =============================================================================
+
+export function formatMetricLine(
+  labelText: string, 
+  valueText: string | number, 
+  state?: 'success' | 'warning' | 'error' | 'info'
+): string {
+  const formattedLabel = label(labelText)
+  const stateSymbol = state ? `${PALETTE[state](SYMBOLS[state])} ` : ''
+  const formattedValue = typeof valueText === 'string' ? valueText : value(valueText)
+  
+  return `${stateSymbol}${formattedLabel}${formattedValue}`
+}
+
+// =============================================================================
+// Table Formatting (Enhanced)
 // =============================================================================
 
 export function formatTable(
   headers: string[],
   rows: string[][],
   options: {
-    padding?  : number
-    separator?: string
+    padding?   : number
+    separator? : string
+    alignments?: ('left' | 'right' | 'center')[]
   } = {}
 ): string {
-  const { padding = 2, separator = ' ' } = options
+  const { padding = 2, separator = ' ', alignments = [] } = options
   
-  // Calculate column widths
+  // Calculate column widths based on content
   const widths = headers.map((header, i) => 
     Math.max(
-      header.length,
-      ...rows.map(row => (row[i] || '').length)
+      stripAnsi(header).length,
+      ...rows.map(row => stripAnsi(row[i] || '').length)
     )
   )
 
   // Format header
   const headerRow = headers
-    .map((header, i) => header.padEnd((widths[i] || 0) + padding))
+    .map((header, i) => {
+      const width = (widths[i] || 0) + padding
+      return PALETTE.heading(header.padEnd(width))
+    })
     .join(separator)
 
   // Format separator line
   const separatorRow = widths
-    .map(width => COLORS.muted(SYMBOLS.dash.repeat(width + padding)))
+    .map(width => PALETTE.muted(SYMBOLS.dash.repeat(width + padding)))
     .join(separator)
 
-  // Format data rows
+  // Format data rows with alignment
   const dataRows = rows.map(row =>
     row
-      .map((cell, i) => (cell || '').padEnd((widths[i] || 0) + padding))
+      .map((cell, i) => {
+        const width = (widths[i] || 0) + padding
+        const alignment = alignments[i] || 'left'
+        const cleanCell = cell || ''
+        
+        switch (alignment) {
+          case 'right':
+            return cleanCell.padStart(width)
+          case 'center': {
+            const totalPadding = width - stripAnsi(cleanCell).length
+            const leftPadding = Math.floor(totalPadding / 2)
+            const rightPadding = totalPadding - leftPadding
+            return ' '.repeat(leftPadding) + cleanCell + ' '.repeat(rightPadding)
+          }
+          default:
+            return cleanCell.padEnd(width)
+        }
+      })
       .join(separator)
   )
 
-  return [
-    COLORS.bold(headerRow),
-    separatorRow,
-    ...dataRows
-  ].join('\n')
+  return [ headerRow, separatorRow, ...dataRows ].join('\n')
 }
 
 // =============================================================================
-// Sparkline Formatting
+// Sparkline Formatting (Enhanced)
 // =============================================================================
 
 export function formatSparkline(
@@ -203,13 +304,13 @@ export function formatSparkline(
 ): string {
   const { width = 20, height = 8, color = true } = options
   
-  if (prices.length === 0) return ''
+  if (prices.length === 0) return PALETTE.muted('─'.repeat(width))
   
   const min = Math.min(...prices)
   const max = Math.max(...prices)
   const range = max - min
   
-  if (range === 0) return '─'.repeat(width)
+  if (range === 0) return PALETTE.muted('─'.repeat(width))
   
   const chars = [ '▁', '▂', '▃', '▄', '▅', '▆', '▇', '█' ]
   const step = width / prices.length
@@ -227,7 +328,7 @@ export function formatSparkline(
     const firstPrice = prices[0] ?? 0
     const lastPrice = prices[prices.length - 1] ?? 0
     const trend = lastPrice - firstPrice
-    return trend >= 0 ? COLORS.success(sparkline) : COLORS.error(sparkline)
+    return trend >= 0 ? PALETTE.success(sparkline) : PALETTE.error(sparkline)
   }
   
   return sparkline
@@ -242,22 +343,8 @@ export function formatJson(data: unknown, space: number = 2): string {
 }
 
 // =============================================================================
-// Loading States
-// =============================================================================
-
-export function formatLoadingMessage(message: string): string {
-  return COLORS.info(message)
-}
-
-// =============================================================================
 // Utility Functions
 // =============================================================================
-
-export function stripAnsi(str: string): string {
-  // Simple ANSI escape sequence removal
-  // eslint-disable-next-line no-control-regex
-  return str.replace(/\u001b\[[0-9;]*m/g, '')
-}
 
 export function formatPercentage(value: number, decimals: number = 2): string {
   return `${value.toFixed(decimals)}%`
@@ -267,5 +354,46 @@ export function formatNumber(value: number, decimals: number = 2): string {
   return new Intl.NumberFormat('en-US', {
     minimumFractionDigits: decimals,
     maximumFractionDigits: decimals,
+    useGrouping          : true,
   }).format(value)
 }
+
+// =============================================================================
+// Environment Detection
+// =============================================================================
+
+export function isColorSupported(): boolean {
+  return process.stdout.isTTY && !process.env.NO_COLOR
+}
+
+export function isTTY(): boolean {
+  return process.stdout.isTTY
+}
+
+// =============================================================================
+// Legacy Compatibility (Deprecated - use new functions above)
+// =============================================================================
+
+export function formatInfoLine(labelText: string, valueText: string): string {
+  return formatMetricLine(labelText, valueText, 'info')
+}
+
+export function formatKeyValue(key: string, valueText: string, indent: number = 2): string {
+  const spaces = ' '.repeat(indent)
+  return `${spaces}${PALETTE.muted(key)}${PALETTE.primary(valueText)}`
+}
+
+export function formatLoadingMessage(message: string): string {
+  return PALETTE.info(message)
+}
+
+// Re-export for backward compatibility
+export const COLORS = {
+  success: PALETTE.success,
+  error  : PALETTE.error,
+  warning: PALETTE.warning,
+  info   : PALETTE.info,
+  muted  : PALETTE.muted,
+  white  : PALETTE.primary,
+  bold   : PALETTE.bold,
+} as const

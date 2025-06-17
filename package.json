@@ -34,7 +34,7 @@
     ]
   },
   "scripts": {
-    "dev": "bun --hot src/index.ts --price",
+    "dev": "bun --hot src/index.ts price",
     "lint": "eslint src --ext .ts --ext .d.ts --fix",
     "test": "bun test",
     "build": "bun build src/index.ts --outdir dist --target node --format esm --external axios --external chalk --external cac --external gradient-string --external ora",
