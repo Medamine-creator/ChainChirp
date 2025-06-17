@@ -1,119 +1,91 @@
 # Quick Start
 
-Get ChainChirp CLI running in 30 seconds and start monitoring Bitcoin data.
+**Get Bitcoin data in your terminal in 30 seconds.**
 
 ## Installation
 
-Choose your preferred package manager:
-
-### Bun (Fastest)
 ```bash
-git clone https://github.com/TristanBietsch/chainchirp.git
-cd chainchirp
-bun install && bun run build && bun link
+npm install -g chainchirp
 ```
 
-### npm
-```bash
-git clone https://github.com/TristanBietsch/chainchirp.git
-cd chainchirp
-npm install && npm run build && npm link
-```
-
-### Yarn
-```bash
-git clone https://github.com/TristanBietsch/chainchirp.git
-cd chainchirp
-yarn install && yarn build && yarn link
-```
-
-### pnpm
-```bash
-git clone https://github.com/TristanBietsch/chainchirp.git
-cd chainchirp
-pnpm install && pnpm build && pnpm link --global
-```
-
-### Homebrew (Coming Soon)
-```bash
-# Coming in v2.1
-brew install chainchirp
-```
-
-## First Run
-
-Test your installation:
-
-```bash
-chainchirp --version
-```
-
-Get current Bitcoin price:
+## First Command
 
 ```bash
 chainchirp price
 ```
 
-**Expected output:**
+**Output:**
 ```
- Bitcoin Price
-  $107,263.50
+â‚¿ Bitcoin (BTC)
+$43,250.00 USD
+```
 
-  æ Updated: Dec 16 at 14:23
-  æ Latency: 127ms
-  æ Provider: CoinGecko
-```
+## That's it!
+
+You now have access to real-time Bitcoin data directly in your terminal.
 
 ## Essential Commands
 
-Start with these core commands:
-
+### Get Current Price
 ```bash
-# Current price with details
-chainchirp price --detailed
+chainchirp price
+```
 
-# Real-time monitoring
+### Watch Price Updates
+```bash  
 chainchirp price --watch
-
-# Fee estimates
-chainchirp fees
-
-# Network hashrate
-chainchirp hashrate
-
-# All-time highs/lows
-chainchirp hl
 ```
 
-## Quick Examples
-
-### JSON Output (for scripts)
+### Get Market Details
 ```bash
-chainchirp price --json
+chainchirp price --detailed
 ```
 
-### Different Currency
+### Check Latest Blocks
+```bash
+chainchirp block
+```
+
+### Monitor Mempool
+```bash
+chainchirp mempool
+```
+
+### Get Fee Recommendations
+```bash
+chainchirp fees
+```
+
+## Pro Tips
+
+**JSON Output for Automation**
+```bash
+chainchirp price --json | jq '.price'
+```
+
+**Custom Update Intervals**
+```bash
+chainchirp price --watch --interval 10
+```
+
+**Different Currencies**
 ```bash
 chainchirp price --currency eur
 ```
 
-### Price Chart
-```bash
-chainchirp sparkline --timeframe 7d --width 60
-```
-
-### Watch Mode
-```bash
-chainchirp price --watch --interval 5
-```
-
 ## Need Help?
 
-- `chainchirp --help` - Full command list
-- `chainchirp <command> --help` - Command-specific help
-- **[Complete Documentation](./index.md)** - All features and options
-- **[Examples](./examples.md)** - Real-world usage scenarios
+- Run `chainchirp --help` for command overview
+- Run `chainchirp <command> --help` for specific command help
+- Check the [FAQ](./faq.md) for common questions
+- View [Examples](./examples.md) for real-world use cases
+
+## What's Next?
+
+- **[Configuration](./config.md)** - Set up API keys and customize behavior
+- **[Command Reference](./commands.md)** - Explore all available commands
+- **[Examples](./examples.md)** - Learn advanced usage patterns
 
 ---
 
-*Ready to explore? Try `chainchirp spark --watch` for live price charts!*
+*Ready to explore? Try `chainchirp --help` to see all available commands.*

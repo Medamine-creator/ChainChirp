@@ -20,7 +20,7 @@ const cli = cac('chainchirp')
 // =============================================================================
 
 function showStyledVersion(): void {
-  const version = '0.3.0'
+  const version = '1.0.0'
   const nodeVersion = process.version
   const platform = `${process.platform}-${process.arch}`
   
@@ -35,7 +35,7 @@ function showStyledVersion(): void {
 
 function showStyledHelp(): void {
   console.log('')
-  console.log(`${PALETTE.cyan('┌')} ${PALETTE.heading('ChainChirp')} ${PALETTE.muted('v0.3.0')} ${symbol('bitcoin')}`)
+  console.log(`${PALETTE.cyan('┌')} ${PALETTE.heading('ChainChirp')} ${PALETTE.muted('v1.0.0')} ${symbol('bitcoin')}`)
   console.log(`${PALETTE.cyan('│')}`)
   console.log(`${PALETTE.cyan('│')} ${PALETTE.primary('Professional Bitcoin ecosystem CLI')}`)
   console.log(`${PALETTE.cyan('│')} ${PALETTE.muted('Real-time data, elegant terminal UX')}`)
@@ -336,7 +336,7 @@ cli.parse = (argv?: string[]) => {
 
 // Still set up basic CAC config for command-specific help
 cli.help()
-cli.version('0.3.0')
+cli.version('1.0.0')
 
 // Global error handler
 process.on('uncaughtException', (error) => {

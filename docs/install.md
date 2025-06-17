@@ -1,75 +1,177 @@
 # Installation Guide
 
-This guide will help you install and set up ChainChirp CLI on your system.
+**Multiple ways to install ChainChirp CLI for every environment.**
 
-## Prerequisites
+## Requirements
 
-- **Node.js** 18+ or **Bun** runtime
-- **Terminal/Command Line** access
-- **Internet connection** for API data
+- **Node.js** 18+ (LTS recommended)
+- **npm**, **yarn**, **pnpm**, or **bun**
 
-## Installation Methods
+## Package Managers
 
-### Option 1: Using Bun (Recommended)
+### npm (Recommended)
 
 ```bash
-# Clone the repository
+# Install globally
+npm install -g chainchirp
+
+# Verify installation
+chainchirp --version
+```
+
+### yarn
+
+```bash
+# Install globally
+yarn global add chainchirp
+
+# Verify installation
+chainchirp --version
+```
+
+### pnpm
+
+```bash
+# Install globally
+pnpm add -g chainchirp
+
+# Verify installation
+chainchirp --version
+```
+
+### bun
+
+```bash
+# Install globally
+bun add -g chainchirp
+
+# Verify installation
+chainchirp --version
+```
+
+## Alternative Installation Methods
+
+### Direct Binary Download
+
+Download pre-built binaries for your platform:
+
+**macOS (Intel)**
+```bash
+curl -L https://github.com/user/chainchirp/releases/latest/download/chainchirp-macos-x64 -o chainchirp
+chmod +x chainchirp
+sudo mv chainchirp /usr/local/bin/
+```
+
+**macOS (Apple Silicon)**
+```bash
+curl -L https://github.com/user/chainchirp/releases/latest/download/chainchirp-macos-arm64 -o chainchirp
+chmod +x chainchirp
+sudo mv chainchirp /usr/local/bin/
+```
+
+**Linux**
+```bash
+curl -L https://github.com/user/chainchirp/releases/latest/download/chainchirp-linux-x64 -o chainchirp
+chmod +x chainchirp
+sudo mv chainchirp /usr/local/bin/
+```
+
+**Windows**
+```powershell
+# Download from GitHub releases
+# https://github.com/user/chainchirp/releases/latest/download/chainchirp-win.exe
+```
+
+### From Source
+
+```bash
+# Clone repository
 git clone https://github.com/TristanBietsch/chainchirp.git
 cd chainchirp
 
 # Install dependencies
 bun install
 
-# Build the project
+# Build project
 bun run build
 
-# Link globally (optional)
+# Link globally
 bun link
 ```
 
-### Option 2: Using Node.js/npm
+## Docker
 
 ```bash
-# Clone the repository
-git clone https://github.com/TristanBietsch/chainchirp.git
-cd chainchirp
+# Run directly
+docker run -it chainchirp/cli price
 
-# Install dependencies
-npm install
-
-# Build the project
-npm run build
-
-# Link globally (optional)
-npm link
+# Create alias
+echo 'alias chainchirp="docker run -it --rm chainchirp/cli"' >> ~/.bashrc
+source ~/.bashrc
 ```
 
-## Running ChainChirp
+## Platform-Specific Instructions
 
-### Local Development
+### macOS
 
+**Homebrew** (Coming Soon)
 ```bash
-# Run directly with Bun
-bunx chainchirp price
-
-# Run directly with Node.js
-node dist/index.js price
+brew install chainchirp
 ```
 
-### Global Installation
-
-After running `bun link` or `npm link`:
-
+**MacPorts** (Coming Soon)
 ```bash
-# Use anywhere in your system
-chainchirp price
-chainchirp volume --watch
-chainchirp hl --json
+sudo port install chainchirp
+```
+
+### Linux
+
+**Ubuntu/Debian**
+```bash
+# Add repository
+curl -fsSL https://apt.chainchirp.com/gpg | sudo apt-key add -
+echo "deb https://apt.chainchirp.com stable main" | sudo tee /etc/apt/sources.list.d/chainchirp.list
+
+# Install
+sudo apt update
+sudo apt install chainchirp
+```
+
+**CentOS/RedHat/Fedora**
+```bash
+# Add repository
+sudo yum-config-manager --add-repo https://yum.chainchirp.com/chainchirp.repo
+
+# Install
+sudo yum install chainchirp
+```
+
+**Arch Linux**
+```bash
+# AUR package
+yay -S chainchirp
+```
+
+### Windows
+
+**Chocolatey** (Coming Soon)
+```powershell
+choco install chainchirp
+```
+
+**Scoop** (Coming Soon)
+```powershell
+scoop install chainchirp
+```
+
+**Winget** (Coming Soon)
+```powershell
+winget install chainchirp
 ```
 
 ## Verification
 
-Test your installation:
+After installation, verify ChainChirp is working correctly:
 
 ```bash
 # Check version
@@ -78,93 +180,109 @@ chainchirp --version
 # Test basic functionality
 chainchirp price
 
-# Test help system
-chainchirp --help
+# Verify JSON output
+chainchirp price --json
 ```
 
-**Expected output:**
-```
-✓ Bitcoin Price
-  $107,263.50
-
-  ◦ Updated: Dec 16 at 14:23
-  ◦ Latency: 127ms
-  ◦ Provider: CoinGecko
-```
-
-## Configuration
-
-### Default Settings
-
-ChainChirp works out of the box with these defaults:
-
-- **Currency**: USD
-- **Watch Interval**: 30 seconds
-- **Chart Width**: 40 characters
-- **Chart Height**: 8 characters
-- **Timeframe**: 24 hours
-
-### Customization
-
-Override defaults with command options:
-
-```bash
-# Different currency
-chainchirp price --currency eur
-
-# Custom watch interval
-chainchirp volume --watch --interval 10
-
-# Custom chart dimensions
-chainchirp spark --width 60 --height 12
-
-# Different timeframe
-chainchirp spark --timeframe 7d
+**Expected Output:**
+```json
+{
+  "symbol": "BTC",
+  "name": "Bitcoin",
+  "price": 43250.00,
+  "currency": "usd",
+  "timestamp": "2024-01-15T10:30:00Z"
+}
 ```
 
 ## Troubleshooting
 
-### Common Issues
+### Permission Errors
 
-#### Command Not Found
+**macOS/Linux:**
 ```bash
-# Error: chainchirp: command not found
-# Solution: Use full path or bunx
-bunx chainchirp price
-# or
-./dist/index.js price
+# Fix npm permissions
+sudo chown -R $(whoami) $(npm config get prefix)/{lib/node_modules,bin,share}
+
+# Or use Node Version Manager
+curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.0/install.sh | bash
+nvm install --lts
+npm install -g chainchirp
 ```
 
-#### Permission Errors
+**Windows:**
+Run Command Prompt or PowerShell as Administrator.
+
+### Command Not Found
+
 ```bash
-# On macOS/Linux, you might need permissions
-chmod +x dist/index.js
+# Check if globally installed packages are in PATH
+npm config get prefix
+
+# Add to PATH (bash/zsh)
+echo 'export PATH="$PATH:$(npm config get prefix)/bin"' >> ~/.bashrc
+source ~/.bashrc
+
+# Add to PATH (fish)
+set -gx PATH $PATH (npm config get prefix)/bin
 ```
 
-#### API Errors
+### Node.js Version Issues
+
 ```bash
-# If you see API errors, the multi-API system will automatically
-# fail over to backup providers. This is normal and transparent.
+# Check Node.js version
+node --version
+
+# Update Node.js (using nvm)
+nvm install --lts
+nvm use --lts
 ```
 
-### Performance Optimization
+### Network/Proxy Issues
 
-#### Faster Startup
 ```bash
-# Pre-build for faster execution
-bun run build
+# Configure npm proxy
+npm config set proxy http://proxy.company.com:8080
+npm config set https-proxy http://proxy.company.com:8080
 
-# Use Bun runtime for better performance
-bunx chainchirp price
+# Or bypass proxy for installation
+npm install -g chainchirp --registry https://registry.npmjs.org
 ```
 
-#### Reduce Latency
-```bash
-# Use shorter intervals for real-time monitoring
-chainchirp price --watch --interval 5
+## Updating
 
-# Use JSON output for automation (faster parsing)
-chainchirp price --json
+### Package Managers
+```bash
+# npm
+npm update -g chainchirp
+
+# yarn
+yarn global upgrade chainchirp
+
+# pnpm
+pnpm update -g chainchirp
+
+# bun
+bun update -g chainchirp
+```
+
+### Binary Installations
+Re-download and replace the binary following the same installation steps.
+
+## Uninstallation
+
+```bash
+# Package managers
+npm uninstall -g chainchirp
+yarn global remove chainchirp
+pnpm remove -g chainchirp
+bun remove -g chainchirp
+
+# Binary installation
+sudo rm /usr/local/bin/chainchirp
+
+# From source
+bun unlink chainchirp
 ```
 
 ## Development Setup
@@ -234,52 +352,12 @@ fi
 0 9 * * * /usr/local/bin/chainchirp price --detailed --json > /tmp/daily-btc.json
 ```
 
-## Updates
+## Next Steps
 
-### Updating ChainChirp
-
-```bash
-# Pull latest changes
-git pull origin main
-
-# Reinstall dependencies
-bun install
-
-# Rebuild
-bun run build
-```
-
-### Version Information
-
-```bash
-# Check current version
-chainchirp --version
-
-# View changelog
-git log --oneline
-```
-
-## Uninstallation
-
-```bash
-# Remove global link
-bun unlink chainchirp
-# or
-npm unlink chainchirp
-
-# Remove project directory
-rm -rf chainchirp
-```
-
-## Support
-
-If you encounter issues:
-
-1. **Check the [FAQ](faq.md)** for common solutions
-2. **View [command documentation](commands.md)** for usage help
-3. **Open an issue** on GitHub with error details
-4. **Verify your Node.js/Bun version** meets requirements
+- **[Quick Start](./quickstart.md)** - Get started in 30 seconds
+- **[Configuration](./config.md)** - Set up API keys and preferences
+- **[Command Reference](./commands.md)** - Explore all available commands
 
 ---
 
-*Installation complete! Start exploring Bitcoin data with `chainchirp --help`*
+*Having installation issues? Check the [FAQ](./faq.md) or [open an issue](https://github.com/TristanBietsch/chainchirp/issues).*

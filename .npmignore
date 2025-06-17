@@ -1,0 +1,39 @@
+# Development files
+src/
+tests/
+docs/
+.github/
+.husky/
+.claude/
+
+# Build and config files
+*.md
+!README.md
+tsconfig.json
+tsconfig.build.json
+eslint.config.mjs
+bun.lock
+.gitignore
+.DS_Store
+
+# Development scripts and configs
+TODO.md
+claude.md
+prompt.md
+index.ts
+
+# Node modules and cache
+node_modules/
+.npm/
+*.log
+*.lock
+
+# IDE and editor files
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS generated files
+Thumbs.db
+.DS_Store 

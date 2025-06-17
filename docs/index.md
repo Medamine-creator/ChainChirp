@@ -1,85 +1,127 @@
 # ChainChirp CLI
 
-Real-time Bitcoin market data with multi-API reliability and beautiful terminal output.
+**Real-time Bitcoin data directly in your terminal.**
 
-## Overview
+ChainChirp is a professional-grade command-line interface that provides instant access to Bitcoin market data, blockchain metrics, and Lightning Network information. Built for traders, developers, and Bitcoin enthusiasts who demand speed and reliability.
 
-ChainChirp CLI is a powerful command-line tool that provides comprehensive Bitcoin market data through a robust multi-API system. Built for traders, developers, and Bitcoin enthusiasts who need reliable, fast, and accurate market information directly in their terminal.
+## Features
 
-## Key Features
+### 📊 Market Data
+- **Real-time pricing** across 6+ exchanges with automatic failover
+- **Trading volume** and market depth analysis
+- **Price changes** over multiple timeframes (1h, 24h, 7d, 30d, 1y)
+- **ASCII sparklines** for visual price trends
+- **Daily/ATH highs and lows** with historical context
 
-- **🔄 Multi-API Reliability**: 6 provider fallback system for 99.9% uptime
-- **⚡ Real-time Updates**: Watch mode with customizable intervals 
-- **📊 Visual Charts**: ASCII sparkline charts for trend analysis
-- **🌍 Multi-currency**: Support for USD, EUR, GBP, JPY, BTC, ETH, SATS
-- **🔧 JSON Output**: Perfect for automation and integration
-- **⚡ Fast**: Sub-second response times with automatic failover
+### ⛓️ Blockchain Analytics
+- **Latest blocks** with size, fees, and transaction counts
+- **Mempool analysis** with congestion metrics
+- **Fee recommendations** for optimal transaction timing
+- **Network hashrate** and difficulty adjustments
+- **Halving countdown** with block rewards
+
+### ⚡ Lightning Network (Coming Soon)
+- Network capacity and channel statistics
+- Node rankings and liquidity analysis
+- Routing fee analysis and pathfinding
+
+### 🔧 Developer Experience
+- **JSON output** for automation and scripting
+- **Watch mode** for real-time monitoring
+- **Multi-currency support** (USD, EUR, GBP, etc.)
+- **Rich terminal formatting** with Unicode symbols
+- **Smart caching** to respect API rate limits
 
 ## Quick Start
 
 ```bash
+# Install globally
+npm install -g chainchirp
+
 # Get current Bitcoin price
 chainchirp price
 
-# Show detailed market data
-chainchirp price --detailed
+# Watch price updates in real-time
+chainchirp price --watch
 
-# Monitor volume in real-time
-chainchirp volume --watch
-
-# Generate 7-day price chart
-chainchirp spark --timeframe 7d
-
-# Get high/low prices
-chainchirp hl
+# Get detailed market data in JSON
+chainchirp price --detailed --json
 ```
 
-## Available Commands
+## Why ChainChirp?
 
-| Command | Description |
-|---------|-------------|
-| `price` | Current Bitcoin price and market data |
-| `volume` | 24h trading volume across exchanges |
-| `change` | Price changes over time periods |
-| `highlow` (`hl`) | Daily and all-time high/low prices |
-| `sparkline` (`spark`) | ASCII price charts |
+**Built for Reliability**
+- Multi-provider API fallback system ensures 99.9% uptime
+- Intelligent rate limiting prevents API throttling
+- Comprehensive error handling with automatic retries
+
+**Optimized for Speed**
+- Sub-second response times with smart caching
+- Minimal dependencies for fast startup
+- Efficient data structures and algorithms
+
+**Professional UX**
+- Stripe/Vercel-inspired terminal design
+- Contextual help system with examples
+- Consistent command patterns and flags
+
+## Architecture
+
+ChainChirp uses a sophisticated multi-layer architecture:
+
+```
+Terminal Interface
+       ↓
+Command Decorators (JSON, Watch, Help)
+       ↓
+Service Layer (Market, Chain, Lightning)
+       ↓
+Multi-Provider API Client
+       ↓
+Data Sources (CoinGecko, Mempool.space, etc.)
+```
+
+## Installation
+
+Choose your preferred installation method:
+
+### Package Managers
+```bash
+# npm (recommended)
+npm install -g chainchirp
+
+# yarn
+yarn global add chainchirp
+
+# pnpm
+pnpm add -g chainchirp
+
+# bun
+bun add -g chainchirp
+```
+
+### Direct Download
+Download pre-built binaries from [GitHub Releases](https://github.com/user/chainchirp/releases).
 
 ## Documentation
 
-- **[Commands](commands.md)** - Complete command reference with examples
-- **[Installation](install.md)** - Installation and setup guide
-- **[FAQ](faq.md)** - Frequently asked questions
+- **[Quick Start](./quickstart.md)** - Get up and running in 30 seconds
+- **[Installation Guide](./install.md)** - Detailed setup instructions
+- **[Command Reference](./commands.md)** - Complete command documentation
+- **[Configuration](./config.md)** - Environment variables and settings
+- **[Examples](./examples.md)** - Real-world usage scenarios
+- **[FAQ](./faq.md)** - Common questions and troubleshooting
 
-## Multi-API System
+## Community
 
-ChainChirp uses 6 different API providers with automatic failover:
+- **GitHub**: [Report issues and contribute](https://github.com/user/chainchirp)
+- **Discussions**: Share use cases and get help
+- **Twitter**: Follow [@chainchirp](https://twitter.com/chainchirp) for updates
 
-1. **CoinGecko** (Primary) - 30 req/min
-2. **CoinMarketCap** - 333 req/min  
-3. **CoinAPI** - 100 req/min
-4. **Binance** - 1200 req/min
-5. **Coinbase** - 10000 req/min
-6. **Kraken** - 60 req/min
+## License
 
-This ensures maximum uptime and data accuracy even when individual providers experience issues.
-
-## Example Output
-
-```
-✓ Bitcoin Price
-  $107,263.50
-
-  ◦ Updated: Dec 16 at 14:23
-  ◦ Latency: 127ms
-  ◦ Provider: CoinGecko
-```
-
-## Support
-
-- **GitHub Issues**: Report bugs and request features
-- **Documentation**: Complete guides and examples
-- **Community**: Join other Bitcoin CLI users
+MIT License - see [LICENSE](../LICENSE) for details.
 
 ---
 
-*Built with ❤️ for the Bitcoin community. Powered by 6 reliable API providers.*
+*Built with ❤️ for the Bitcoin community*
