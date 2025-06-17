@@ -323,18 +323,18 @@ export CHAINCHIRP_INTERVAL=10     # Default interval
 
 ## 🗺️ Roadmap
 
-### ⚡ Lightning Network (Q1 2024)
+### ⚡ Lightning Network
 - **ln-cap**: Network capacity analysis
 - **ln-channels**: Channel statistics and routing
 - **ln-nodes**: Node rankings and metrics
 - **ln-fee**: Lightning routing costs
 
-### 🌐 Network Expansion (Q2 2024)  
+### 🌐 Network Expansion
 - **Testnet support**: Bitcoin testnet data
 - **Sentiment analysis**: Market sentiment metrics
 - **Enhanced charts**: More visualization options
 
-### 📊 Advanced Features (Q3-Q4 2024)
+### 📊 Advanced Features
 - **Dashboard mode**: Multi-metric real-time display
 - **Multi-asset support**: Ethereum and other cryptocurrencies
 - **Plugin system**: Third-party extensions
