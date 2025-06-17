@@ -14,7 +14,7 @@ const cli = cac("chainchirp");
 // =============================================================================
 
 function showStyledVersion(): void {
-  const version = "1.0.1";
+  const version = "1.0.2";
   const nodeVersion = process.version;
   const platform = `${process.platform}-${process.arch}`;
 
@@ -36,7 +36,7 @@ function showStyledVersion(): void {
 function showStyledHelp(): void {
   console.log("");
   console.log(
-    `${PALETTE.cyan("┌")} ${PALETTE.heading("ChainChirp")} ${PALETTE.muted("v1.0.1")} ${symbol("bitcoin")}`
+    `${PALETTE.cyan("┌")} ${PALETTE.heading("ChainChirp")} ${PALETTE.muted("v1.0.2")} ${symbol("bitcoin")}`
   );
   console.log(`${PALETTE.cyan("│")}`);
   console.log(
@@ -88,22 +88,25 @@ function showStyledHelp(): void {
   console.log("");
   console.log(`${PALETTE.heading("Global Options")}`);
   console.log(
-    `  ${PALETTE.cyan("--json")}               ${PALETTE.muted("JSON output for automation")}`
+    `  ${PALETTE.cyan("--detailed")}               ${PALETTE.muted("Show comprehensive data and analysis")}`
   );
   console.log(
-    `  ${PALETTE.cyan("--watch")}              ${PALETTE.muted("Real-time updates")}`
+    `  ${PALETTE.cyan("--json")}                   ${PALETTE.muted("JSON output for automation")}`
   );
   console.log(
-    `  ${PALETTE.cyan("--interval")} ${PALETTE.muted("<sec>")}     ${PALETTE.muted("Update frequency (default: 30)")}`
+    `  ${PALETTE.cyan("--watch")}                  ${PALETTE.muted("Real-time updates")}`
   );
   console.log(
-    `  ${PALETTE.cyan("--currency")} ${PALETTE.muted("<code>")}    ${PALETTE.muted("Display currency (default: usd)")}`
+    `  ${PALETTE.cyan("--interval")} ${PALETTE.muted("<sec>")}         ${PALETTE.muted("Update frequency (default: 30)")}`
   );
   console.log(
-    `  ${PALETTE.cyan("-h, --help")}          ${PALETTE.muted("Show help information")}`
+    `  ${PALETTE.cyan("--currency")} ${PALETTE.muted("<code>")}        ${PALETTE.muted("Display currency (default: usd)")}`
   );
   console.log(
-    `  ${PALETTE.cyan("-v, --version")}       ${PALETTE.muted("Show version number")}`
+    `  ${PALETTE.cyan("-h, --help")}               ${PALETTE.muted("Show help information")}`
+  );
+  console.log(
+    `  ${PALETTE.cyan("-v, --version")}            ${PALETTE.muted("Show version number")}`
   );
   console.log("");
   console.log(`${PALETTE.heading("Examples")}`);
@@ -445,7 +448,7 @@ cli.parse = (argv?: string[]) => {
 
 // Still set up basic CAC config for command-specific help
 cli.help();
-cli.version("1.0.1");
+cli.version("1.0.2");
 
 // Global error handler
 process.on("uncaughtException", (error) => {
