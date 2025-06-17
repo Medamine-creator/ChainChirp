@@ -111,7 +111,7 @@ async function executeHighLowCommand(options: {
         
         if (data.atlChangePercent) {
           const atlChange = formatPriceChange(data.atlChangePercent, true)
-          console.log(formatInfoLine('From ATL', `+${atlChange}`))
+          console.log(formatInfoLine('From ATL', atlChange))
         }
         
         console.log('')

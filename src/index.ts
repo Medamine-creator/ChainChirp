@@ -10,9 +10,71 @@ import {
   chainCommands,
   chainCommandDescriptions,
 } from '@/commands/chain'
+import { PALETTE, symbol } from '@/utils/formatter'
 import type { Currency, TimeFrame } from '@/types'
 
 const cli = cac('chainchirp')
+
+// =============================================================================
+// Stripe/Vercel-Quality CLI Styling
+// =============================================================================
+
+function showStyledVersion(): void {
+  const version = '0.3.0'
+  const nodeVersion = process.version
+  const platform = `${process.platform}-${process.arch}`
+  
+  console.log('')
+  console.log(`${PALETTE.cyan('┌')} ${PALETTE.heading('ChainChirp')} ${PALETTE.muted(`v${version}`)}`)
+  console.log(`${PALETTE.cyan('│')}`)
+  console.log(`${PALETTE.cyan('│')} ${symbol('bitcoin')} ${PALETTE.primary('Professional Bitcoin CLI')}`)
+  console.log(`${PALETTE.cyan('│')} ${PALETTE.muted(`${platform} • node ${nodeVersion}`)}`)
+  console.log(`${PALETTE.cyan('└')}`)
+  console.log('')
+}
+
+function showStyledHelp(): void {
+  console.log('')
+  console.log(`${PALETTE.cyan('┌')} ${PALETTE.heading('ChainChirp')} ${PALETTE.muted('v0.3.0')} ${symbol('bitcoin')}`)
+  console.log(`${PALETTE.cyan('│')}`)
+  console.log(`${PALETTE.cyan('│')} ${PALETTE.primary('Professional Bitcoin ecosystem CLI')}`)
+  console.log(`${PALETTE.cyan('│')} ${PALETTE.muted('Real-time data, elegant terminal UX')}`)
+  console.log(`${PALETTE.cyan('└')}`)
+  console.log('')
+  console.log(`${PALETTE.heading('Usage')}`)
+  console.log(`  ${PALETTE.muted('$')} ${PALETTE.primary('chainchirp')} ${PALETTE.cyan('<command>')} ${PALETTE.muted('[options]')}`)
+  console.log('')
+  console.log(`${PALETTE.heading('Market Commands')}`)
+  console.log(`  ${PALETTE.cyan('price')}      ${PALETTE.muted('Current Bitcoin price and market data')}`)
+  console.log(`  ${PALETTE.cyan('volume')}     ${PALETTE.muted('24h trading volume across exchanges')}`)
+  console.log(`  ${PALETTE.cyan('change')}     ${PALETTE.muted('Price changes over multiple periods')}`)
+  console.log(`  ${PALETTE.cyan('highlow')}    ${PALETTE.muted('Daily and all-time price records')}`)
+  console.log(`  ${PALETTE.cyan('sparkline')}  ${PALETTE.muted('ASCII price charts and trends')}`)
+  console.log('')
+  console.log(`${PALETTE.heading('Network Commands')}`)
+  console.log(`  ${PALETTE.cyan('block')}      ${PALETTE.muted('Latest blocks and blockchain data')}`)
+  console.log(`  ${PALETTE.cyan('mempool')}    ${PALETTE.muted('Transaction pool and congestion')}`)
+  console.log(`  ${PALETTE.cyan('fees')}       ${PALETTE.muted('Transaction fee recommendations')}`)
+  console.log(`  ${PALETTE.cyan('hashrate')}   ${PALETTE.muted('Network security and difficulty')}`)
+  console.log(`  ${PALETTE.cyan('halving')}    ${PALETTE.muted('Next halving countdown and rewards')}`)
+  console.log('')
+  console.log(`${PALETTE.heading('Global Options')}`)
+  console.log(`  ${PALETTE.cyan('--json')}               ${PALETTE.muted('JSON output for automation')}`)
+  console.log(`  ${PALETTE.cyan('--watch')}              ${PALETTE.muted('Real-time updates')}`)
+  console.log(`  ${PALETTE.cyan('--interval')} ${PALETTE.muted('<sec>')}     ${PALETTE.muted('Update frequency (default: 30)')}`)
+  console.log(`  ${PALETTE.cyan('--currency')} ${PALETTE.muted('<code>')}    ${PALETTE.muted('Display currency (default: usd)')}`)
+  console.log(`  ${PALETTE.cyan('-h, --help')}          ${PALETTE.muted('Show help information')}`)
+  console.log(`  ${PALETTE.cyan('-v, --version')}       ${PALETTE.muted('Show version number')}`)
+  console.log('')
+  console.log(`${PALETTE.heading('Examples')}`)
+  console.log(`  ${PALETTE.muted('$')} ${PALETTE.primary('chainchirp price')} ${PALETTE.muted('--detailed')}`)
+  console.log(`  ${PALETTE.muted('$')} ${PALETTE.primary('chainchirp fees')} ${PALETTE.muted('--watch --interval 15')}`)
+  console.log(`  ${PALETTE.muted('$')} ${PALETTE.primary('chainchirp sparkline')} ${PALETTE.muted('--width 60 --timeframe 7d')}`)
+  console.log(`  ${PALETTE.muted('$')} ${PALETTE.primary('chainchirp price')} ${PALETTE.muted('--currency eur --json')}`)
+  console.log('')
+  console.log(`${PALETTE.muted('Learn more:')} ${PALETTE.cyan('https://github.com/chainchirp/cli')}`)
+  console.log('')
+}
 
 // =============================================================================
 // CLI Configuration
@@ -236,14 +298,43 @@ cli
 cli
   .command('')
   .action(async () => {
-    // Show help if no specific command
-    cli.outputHelp()
+    // Show custom styled help if no specific command
+    showStyledHelp()
   })
 
 // =============================================================================
-// CLI Configuration
+// CLI Configuration & Custom Help/Version Override
 // =============================================================================
 
+// Override default help and version with our styled versions
+const originalParse = cli.parse.bind(cli)
+cli.parse = (argv?: string[]) => {
+  const args = argv || process.argv.slice(2)
+  
+  // Check for version flags
+  if (args.includes('--version') || args.includes('-v')) {
+    showStyledVersion()
+    process.exit(0)
+  }
+  
+  // Check for help flags (only global, not command-specific)
+  if (args.includes('--help') || args.includes('-h')) {
+    // If there's a command before the help flag, let cac handle it
+    const commandExists = args.some(arg => 
+      !arg.startsWith('-') && 
+      [ 'price', 'volume', 'change', 'highlow', 'sparkline', 'block', 'mempool', 'fees', 'hashrate', 'halving' ].includes(arg)
+    )
+    
+    if (!commandExists) {
+      showStyledHelp()
+      process.exit(0)
+    }
+  }
+  
+  return originalParse(argv)
+}
+
+// Still set up basic CAC config for command-specific help
 cli.help()
 cli.version('0.3.0')
 

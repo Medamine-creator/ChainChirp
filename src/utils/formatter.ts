@@ -51,10 +51,10 @@ export const SYMBOLS = {
 // =============================================================================
 
 /**
- * Format a metric label with consistent width (12 chars)
+ * Format a metric label with consistent width (16 chars)
  */
 export function label(text: string): string {
-  return PALETTE.muted(text.padEnd(12))
+  return PALETTE.muted(text.padEnd(16))
 }
 
 /**
@@ -227,7 +227,7 @@ export function formatInfoMessage(title: string, subtitle?: string): string {
 }
 
 // =============================================================================
-// Metric Line Formatting (12-char label + value)
+// Metric Line Formatting (16-char label + value)
 // =============================================================================
 
 export function formatMetricLine(
@@ -235,12 +235,12 @@ export function formatMetricLine(
   valueText: string | number, 
   state?: 'success' | 'warning' | 'error' | 'info'
 ): string {
-  // Always reserve 2 characters for symbol space to maintain alignment
+  // Always reserve 4 characters for symbol space to maintain alignment with wider labels
   const stateSymbol = state ? `${PALETTE[state](SYMBOLS[state])} ` : '  '
   const formattedLabel = label(labelText)
   const formattedValue = typeof valueText === 'string' ? valueText : value(valueText)
   
-  return `${stateSymbol}${formattedLabel}${formattedValue}`
+  return `${stateSymbol}${formattedLabel} ${formattedValue}`
 }
 
 // =============================================================================

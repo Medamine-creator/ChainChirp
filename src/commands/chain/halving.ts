@@ -46,7 +46,7 @@ function renderHalvingData(data: HalvingData, result: CommandResult<any>) {
 
   // Next halving block
   const halvingHeightText = data.halvingBlockHeight.toLocaleString()
-  console.log(formatInfoLine('Next Halving Block', halvingHeightText))
+  console.log(formatInfoLine('Halving Block', halvingHeightText))
 
   // Blocks remaining with progress
   const remainingText = `${data.blocksRemaining.toLocaleString()} blocks`
@@ -105,7 +105,7 @@ const halvingWatchRenderer = (data: HalvingData, result: CommandResult<any>, pre
   const timeText = formatTimeRemaining(data.daysRemaining)
 
   console.log(formatInfoLine('Current Block', heightText))
-  console.log(formatInfoLine('Next Halving Block', halvingHeightText))
+  console.log(formatInfoLine('Halving Block', halvingHeightText))
   console.log(formatInfoLine('Blocks Remaining', `${progressEmoji} ${remainingText}`))
   console.log(formatInfoLine('Estimated Time', timeText))
 
