@@ -1,4 +1,5 @@
 # Development files
+[dd![CI](https://github.com/TristanBietsch/chainchirp/actions/workflows/ci.yml/badge.svg)](https://github.com/TristanBietsch/chainchirp/actions)
 src/
 tests/
 docs/

@@ -1,6 +1,6 @@
 {
   "name": "chainchirp",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Professional Bitcoin ecosystem CLI tool for real-time data, market analysis, and network monitoring",
   "module": "index.ts",
   "type": "module",
