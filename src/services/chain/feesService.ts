@@ -1,4 +1,5 @@
 import { fetchWithFallback } from '@/services/apiClient'
+import { statusSymbol } from '@/utils/formatter'
 import type {
   FeeEstimate,
   BaseService,
@@ -146,11 +147,7 @@ export class FeesService implements BaseService {
   }
 
   private getFeeEmoji(level: 'low' | 'medium' | 'high'): string {
-    switch (level) {
-      case 'low'   : return '🟢'
-      case 'medium': return '🟡'
-      case 'high'  : return '🔴'
-    }
+    return statusSymbol(level)
   }
 
   private getFeeDescription(type: keyof Omit<FeeEstimate, 'unit' | 'timestamp'>): string {

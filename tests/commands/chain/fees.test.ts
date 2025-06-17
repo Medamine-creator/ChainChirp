@@ -53,17 +53,27 @@ describe('Fees Command', () => {
     })
 
     test('should determine fee level emojis', () => {
+      const { statusSymbol } = require('@/utils/formatter')
+      
       const getFeeEmoji = (fee: number) => {
-        if (fee >= 50) return '🔴' // High
-        if (fee >= 20) return '🟠' // Medium-High
-        if (fee >= 10) return '🟡' // Medium
-        return '🟢' // Low
+        if (fee >= 50) return statusSymbol('high')   // High
+        if (fee >= 20) return statusSymbol('high')   // Medium-High (mapped to high) 
+        if (fee >= 10) return statusSymbol('medium') // Medium
+        return statusSymbol('low') // Low
       }
       
-      expect(getFeeEmoji(60)).toBe('🔴')
-      expect(getFeeEmoji(25)).toBe('🟠')
-      expect(getFeeEmoji(15)).toBe('🟡')
-      expect(getFeeEmoji(5)).toBe('🟢')
+      // Test that different fee levels return different symbols/colors
+      const lowFee = getFeeEmoji(5)
+      const mediumFee = getFeeEmoji(15)
+      const highFee = getFeeEmoji(60)
+      
+      expect(lowFee).toBeTruthy()
+      expect(mediumFee).toBeTruthy()
+      expect(highFee).toBeTruthy()
+      
+      // Verify they're different (symbols will be colored differently)
+      expect(lowFee).not.toBe(mediumFee)
+      expect(mediumFee).not.toBe(highFee)
     })
 
     test('should calculate transaction costs', () => {

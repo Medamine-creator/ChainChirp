@@ -8,6 +8,7 @@ import {
   formatErrorMessage,
   formatInfoLine,
   formatTimestamp,
+  statusSymbol,
 } from '@/utils/formatter'
 import {
   withWatch,
@@ -196,11 +197,7 @@ function getFeeLevel(feeRate: number): 'low' | 'medium' | 'high' {
 }
 
 function getFeeEmoji(level: 'low' | 'medium' | 'high'): string {
-  switch (level) {
-    case 'low'   : return '🟢'
-    case 'medium': return '🟡'
-    case 'high'  : return '🔴'
-  }
+  return statusSymbol(level)
 }
 
 function formatFeeWithLevel(fee: number): string {

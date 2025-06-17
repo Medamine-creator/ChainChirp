@@ -7,6 +7,7 @@ import {
   formatErrorMessage,
   formatInfoLine,
   formatTimestamp,
+  statusSymbol,
 } from '@/utils/formatter'
 import {
   withWatch,
@@ -150,13 +151,13 @@ const halvingWatchJsonFormatter = createWatchJsonFormatter(
 
 function getProgressEmoji(progress: number): string {
   if (progress < 25) {
-    return '🟢' // Early in cycle
+    return statusSymbol('low')     // Early in cycle - green
   } else if (progress < 50) {
-    return '🟡' // Mid cycle
+    return statusSymbol('medium')  // Mid cycle - yellow
   } else if (progress < 75) {
-    return '🟠' // Late cycle
+    return statusSymbol('medium')  // Late cycle - yellow (no orange in our palette)
   } else {
-    return '🔴' // Very close to halving
+    return statusSymbol('high')    // Very close to halving - red
   }
 }
 

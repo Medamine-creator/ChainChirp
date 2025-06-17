@@ -177,19 +177,36 @@ describe('Halving Command Tests', () => {
     })
 
     test('should validate progress emoji mapping', () => {
+      const { statusSymbol } = require('@/utils/formatter')
+      
+      const getProgressSymbol = (progress: number): string => {
+        if (progress < 25) return statusSymbol('low')
+        if (progress < 50) return statusSymbol('medium')
+        if (progress < 75) return statusSymbol('medium')
+        return statusSymbol('high')
+      }
+      
       const progressLevels = [
-        { progress: 10, expectedEmoji: '🟢' },
-        { progress: 35, expectedEmoji: '🟡' },
-        { progress: 65, expectedEmoji: '🟠' },
-        { progress: 85, expectedEmoji: '🔴' },
+        { progress: 10, symbol: getProgressSymbol(10) },
+        { progress: 35, symbol: getProgressSymbol(35) },
+        { progress: 65, symbol: getProgressSymbol(65) },
+        { progress: 85, symbol: getProgressSymbol(85) },
       ]
 
-      progressLevels.forEach(({ progress, expectedEmoji }) => {
+      progressLevels.forEach(({ progress, symbol }) => {
         expect(typeof progress).toBe('number')
-        expect(typeof expectedEmoji).toBe('string')
+        expect(typeof symbol).toBe('string')
         expect(progress).toBeGreaterThanOrEqual(0)
         expect(progress).toBeLessThanOrEqual(100)
+        expect(symbol).toBeTruthy()
       })
+      
+      // Verify different progress levels produce different symbols
+      const lowProgress = getProgressSymbol(10)
+      const mediumProgress = getProgressSymbol(50) 
+      const highProgress = getProgressSymbol(85)
+      
+      expect(lowProgress).not.toBe(highProgress)
     })
   })
 

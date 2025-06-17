@@ -8,6 +8,7 @@ import {
   formatInfoLine,
   formatTimestamp,
   formatNumber,
+  statusSymbol,
 } from '@/utils/formatter'
 import {
   withWatch,
@@ -166,11 +167,7 @@ function formatFees(sats: number): string {
 }
 
 function getCongestionEmoji(level: 'low' | 'medium' | 'high'): string {
-  switch (level) {
-    case 'low'   : return '🟢'
-    case 'medium': return '🟡'
-    case 'high'  : return '🔴'
-  }
+  return statusSymbol(level)
 }
 
 // =============================================================================

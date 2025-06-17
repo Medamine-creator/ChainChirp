@@ -1,4 +1,5 @@
 import { fetchWithFallback, blockchain } from '@/services/apiClient'
+import { statusSymbol } from '@/utils/formatter'
 import type {
   MempoolInfo,
   BaseService,
@@ -158,11 +159,7 @@ export class MempoolService implements BaseService {
   }
 
   private getCongestionEmoji(level: 'low' | 'medium' | 'high'): string {
-    switch (level) {
-      case 'low'   : return '🟢'
-      case 'medium': return '🟡'
-      case 'high'  : return '🔴'
-    }
+    return statusSymbol(level)
   }
 
   // ===========================================================================

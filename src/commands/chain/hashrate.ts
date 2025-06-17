@@ -7,6 +7,7 @@ import {
   formatErrorMessage,
   formatInfoLine,
   formatTimestamp,
+  statusSymbol,
 } from '@/utils/formatter'
 import {
   withWatch,
@@ -142,13 +143,13 @@ const hashrateWatchJsonFormatter = createWatchJsonFormatter(
 
 function getProgressEmoji(progress: number): string {
   if (progress < 25) {
-    return '🟢' // Early in period
+    return statusSymbol('low')     // Early in period - green
   } else if (progress < 50) {
-    return '🟡' // Mid period
+    return statusSymbol('medium')  // Mid period - yellow
   } else if (progress < 75) {
-    return '🟠' // Late period
+    return statusSymbol('medium')  // Late period - yellow (no orange in our palette)
   } else {
-    return '🔴' // Very close to adjustment
+    return statusSymbol('high')    // Very close to adjustment - red
   }
 }
 

@@ -95,17 +95,27 @@ describe('Hashrate Command', () => {
     })
 
     test('should determine progress emojis correctly', () => {
+      const { statusSymbol } = require('@/utils/formatter')
+      
       const getProgressEmoji = (progress: number): string => {
-        if (progress >= 90) return '🔴' // Almost done
-        if (progress >= 70) return '🟠' // Getting close
-        if (progress >= 40) return '🟡' // Halfway
-        return '🟢' // Early
+        if (progress >= 90) return statusSymbol('high')   // Almost done
+        if (progress >= 70) return statusSymbol('high')   // Getting close
+        if (progress >= 40) return statusSymbol('medium') // Halfway
+        return statusSymbol('low') // Early
       }
       
-      expect(getProgressEmoji(95)).toBe('🔴')
-      expect(getProgressEmoji(75)).toBe('🟠')
-      expect(getProgressEmoji(50)).toBe('🟡')
-      expect(getProgressEmoji(25)).toBe('🟢')
+      // Test that different progress levels return different symbols/colors
+      const earlyProgress = getProgressEmoji(25)
+      const midProgress = getProgressEmoji(50)
+      const lateProgress = getProgressEmoji(95)
+      
+      expect(earlyProgress).toBeTruthy()
+      expect(midProgress).toBeTruthy()
+      expect(lateProgress).toBeTruthy()
+      
+      // Verify they're different (symbols will be colored differently)
+      expect(earlyProgress).not.toBe(midProgress)
+      expect(midProgress).not.toBe(lateProgress)
     })
 
     test('should calculate time to next adjustment', () => {

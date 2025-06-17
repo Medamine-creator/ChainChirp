@@ -35,7 +35,7 @@ export const SYMBOLS = {
   success  : '✔',
   error    : '✖',
   warning  : '⚠',
-  info     : 'ℹ',
+  info     : ' ',
   bitcoin  : '₿',
   lightning: 'ᛋ',
   
@@ -70,6 +70,21 @@ export function value(text: string | number, color?: keyof typeof PALETTE): stri
  */
 export function symbol(kind: keyof typeof SYMBOLS): string {
   return SYMBOLS[kind]
+}
+
+/**
+ * Get colored status indicator (replaces emoji circles)
+ */
+export function statusSymbol(level: 'low' | 'medium' | 'high' | 'neutral'): string {
+  const symbol = '●'
+  
+  switch (level) {
+    case 'low'    : return PALETTE.success(symbol)  // Green
+    case 'medium' : return PALETTE.warning(symbol)  // Yellow
+    case 'high'   : return PALETTE.error(symbol)    // Red
+    case 'neutral': return PALETTE.muted('○')       // Gray circle outline
+    default       : return PALETTE.muted('○')
+  }
 }
 
 /**
@@ -220,8 +235,9 @@ export function formatMetricLine(
   valueText: string | number, 
   state?: 'success' | 'warning' | 'error' | 'info'
 ): string {
+  // Always reserve 2 characters for symbol space to maintain alignment
+  const stateSymbol = state ? `${PALETTE[state](SYMBOLS[state])} ` : '  '
   const formattedLabel = label(labelText)
-  const stateSymbol = state ? `${PALETTE[state](SYMBOLS[state])} ` : ''
   const formattedValue = typeof valueText === 'string' ? valueText : value(valueText)
   
   return `${stateSymbol}${formattedLabel}${formattedValue}`

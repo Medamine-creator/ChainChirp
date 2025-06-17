@@ -9,6 +9,7 @@ import {
   isColorSupported,
   isTTY,
   stripAnsi,
+  statusSymbol,
   SYMBOLS,
   PALETTE,
 } from './formatter'
@@ -394,6 +395,7 @@ export const logger = {
   raw,
   clean,
   timestamp,
+  statusSymbol,
   
   // Watch mode
   watchHeader,
