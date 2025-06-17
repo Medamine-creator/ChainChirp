@@ -64,48 +64,54 @@ export const marketCommands: MarketCommandHandlers = {
 
 export const marketCommandDescriptions = {
   price: {
-    description: 'Get current Bitcoin price',
+    description: 'Get current Bitcoin price and comprehensive market data',
     usage      : 'chainchirp price [options]',
     examples   : [
       'chainchirp price',
+      'chainchirp price --detailed',
       'chainchirp price --currency eur',
       'chainchirp price --json',
-      'chainchirp price --watch --interval 10',
+      'chainchirp price --watch --interval 5',
     ],
   },
   volume: {
-    description: 'Get Bitcoin 24h trading volume',
+    description: 'Get Bitcoin 24h trading volume across all major exchanges',
     usage      : 'chainchirp volume [options]',
     examples   : [
       'chainchirp volume',
+      'chainchirp volume --currency eur',
       'chainchirp volume --json',
       'chainchirp volume --watch',
     ],
   },
   change: {
-    description: 'Get Bitcoin price changes over time',
+    description: 'Get Bitcoin price changes over multiple time periods',
     usage      : 'chainchirp change [options]',
     examples   : [
       'chainchirp change',
       'chainchirp change --detailed',
+      'chainchirp change --watch --detailed',
       'chainchirp change --json',
     ],
   },
   highlow: {
-    description: 'Get Bitcoin high/low prices',
-    usage      : 'chainchirp highlow [options]',
+    description: 'Get Bitcoin high/low prices (24h + all-time records)',
+    usage      : 'chainchirp highlow [options] | chainchirp hl [options]',
     examples   : [
       'chainchirp highlow',
+      'chainchirp hl',
+      'chainchirp hl --watch',
       'chainchirp highlow --json',
     ],
   },
   sparkline: {
-    description: 'Get Bitcoin price sparkline chart',
-    usage      : 'chainchirp sparkline [options]',
+    description: 'Generate ASCII price charts with customizable timeframes',
+    usage      : 'chainchirp sparkline [options] | chainchirp spark [options]',
     examples   : [
       'chainchirp sparkline',
-      'chainchirp sparkline --timeframe 7d',
+      'chainchirp spark --timeframe 7d',
       'chainchirp sparkline --width 60 --height 10',
+      'chainchirp spark --watch --timeframe 1h',
     ],
   },
 } as const

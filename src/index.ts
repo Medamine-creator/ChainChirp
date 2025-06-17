@@ -11,13 +11,17 @@ import type { Currency, TimeFrame } from '@/types'
 const cli = cac('chainchirp')
 
 // =============================================================================
+// CLI Configuration
+// =============================================================================
+
+// =============================================================================
 // Global Options
 // =============================================================================
 
-cli.option('--json', 'Output as JSON')
-cli.option('--watch', 'Watch for changes (updates every 30s)')
-cli.option('--interval <seconds>', 'Watch interval in seconds', { default: 30 })
-cli.option('--currency <currency>', 'Currency for price display', { default: 'usd' })
+cli.option('--json', 'Output data in JSON format for automation and integration')
+cli.option('--watch', 'Enable real-time watch mode with automatic updates')
+cli.option('--interval <seconds>', 'Set watch mode update interval in seconds', { default: 30 })
+cli.option('--currency <currency>', 'Set currency for price display (usd, eur, gbp, jpy, btc, eth, sats)', { default: 'usd' })
 
 // =============================================================================
 // Market Commands
@@ -130,25 +134,14 @@ cli
   })
 
 // =============================================================================
-// Default Command (Backward Compatibility)
+// Default Command (Show Help)
 // =============================================================================
 
 cli
   .command('')
-  .option('--price', 'Get current Bitcoin price (deprecated: use "price" command)')
-  .action(async (options) => {
-    if (options.price) {
-      console.log(chalk.yellow('ⓘ --price flag is deprecated. Use "chainchirp price" instead.'))
-      await marketCommands.price({
-        currency: options.currency as Currency,
-        json    : options.json,
-        watch   : options.watch,
-        interval: parseInt(options.interval) || 30,
-      })
-    } else {
-      // Show help if no specific command
-      cli.outputHelp()
-    }
+  .action(async () => {
+    // Show help if no specific command
+    cli.outputHelp()
   })
 
 // =============================================================================
@@ -156,7 +149,7 @@ cli
 // =============================================================================
 
 cli.help()
-cli.version('1.0.0')
+cli.version('0.3.0')
 
 // Global error handler
 process.on('uncaughtException', (error) => {
