@@ -147,13 +147,13 @@ export async function priceCommand(options: PriceCommandOptions = {}): Promise<v
 
   // Handle watch mode
   if (watch) {
-    await watchPriceCommand({ currency, json, interval, detailed })
+    await watchPriceCommand({ currency, json: json || false, interval, detailed })
     return
   }
 
   // Handle JSON mode
   if (json) {
-    await jsonPriceCommand({ currency, detailed })
+    await jsonPriceCommand({ currency, detailed, json: true })
     return
   }
 

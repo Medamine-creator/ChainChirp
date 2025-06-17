@@ -4,9 +4,11 @@
 
 // Export all chain command handlers
 export { blockCommand } from './block'
+export { mempoolCommand } from './mempool'
 
 // Export command option types
 export type { BlockCommandOptions } from './block'
+export type { MempoolCommandOptions } from './mempool'
 
 // =============================================================================
 // Command Registry for CLI Integration
@@ -19,18 +21,21 @@ export interface ChainCommandHandlers {
     recent?: number
     hash?  : string
   }) => Promise<void>
+  mempool: (options?: BaseCommandOptions & { 
+    detailed?: boolean 
+  }) => Promise<void>
   // TODO: Add other chain commands as they are implemented
-  // mempool: (options?: BaseCommandOptions & { detailed?: boolean }) => Promise<void>
   // fees   : (options?: BaseCommandOptions & { history?: number }) => Promise<void>
   // hashrate: (options?: BaseCommandOptions & { detailed?: boolean }) => Promise<void>
   // halving: (options?: BaseCommandOptions & { history?: boolean }) => Promise<void>
 }
 
 // Create command registry
-import { blockCommand } from '.'
+import { blockCommand, mempoolCommand } from '.'
 
 export const chainCommands: ChainCommandHandlers = {
-  block: blockCommand,
+  block  : blockCommand,
+  mempool: mempoolCommand,
 }
 
 // =============================================================================
@@ -47,6 +52,17 @@ export const chainCommandDescriptions = {
       'chainchirp block --hash 000000000019d6689c085ae165831e934ff763ae46a2a6c172b3f1b60a8ce26f',
       'chainchirp block --json',
       'chainchirp block --watch',
+    ],
+  },
+  mempool: {
+    description: 'Get Bitcoin mempool status and congestion analysis',
+    usage      : 'chainchirp mempool [options]',
+    examples   : [
+      'chainchirp mempool',
+      'chainchirp mempool --detailed',
+      'chainchirp mempool --watch',
+      'chainchirp mempool --json',
+      'chainchirp mempool --watch --detailed',
     ],
   },
   // TODO: Add descriptions for other chain commands

@@ -161,6 +161,24 @@ cli
     }
   })
 
+// Mempool command
+cli
+  .command('mempool', chainCommandDescriptions.mempool.description)
+  .option('--detailed', 'Show fee histogram and detailed analysis')
+  .action(async (options) => {
+    try {
+      await chainCommands.mempool({
+        detailed: options.detailed,
+        json    : options.json,
+        watch   : options.watch,
+        interval: parseInt(options.interval) || 15,
+      })
+    } catch (error) {
+      console.error(chalk.red('✕ Mempool command failed:'), error instanceof Error ? error.message : 'Unknown error')
+      process.exit(1)
+    }
+  })
+
 // =============================================================================
 // Default Command (Show Help)
 // =============================================================================
