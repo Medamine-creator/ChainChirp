@@ -6,6 +6,10 @@ import {
   marketCommands,
   marketCommandDescriptions,
 } from '@/commands/market'
+import {
+  chainCommands,
+  chainCommandDescriptions,
+} from '@/commands/chain'
 import type { Currency, TimeFrame } from '@/types'
 
 const cli = cac('chainchirp')
@@ -129,6 +133,30 @@ cli
       })
     } catch (error) {
       console.error(chalk.red('✕ Sparkline command failed:'), error instanceof Error ? error.message : 'Unknown error')
+      process.exit(1)
+    }
+  })
+
+// =============================================================================
+// Chain Commands
+// =============================================================================
+
+// Block command
+cli
+  .command('block', chainCommandDescriptions.block.description)
+  .option('--recent <count>', 'Show N recent blocks')
+  .option('--hash <hash>', 'Get specific block by hash')
+  .action(async (options) => {
+    try {
+      await chainCommands.block({
+        recent  : options.recent ? parseInt(options.recent) : undefined,
+        hash    : options.hash,
+        json    : options.json,
+        watch   : options.watch,
+        interval: parseInt(options.interval) || 30,
+      })
+    } catch (error) {
+      console.error(chalk.red('✕ Block command failed:'), error instanceof Error ? error.message : 'Unknown error')
       process.exit(1)
     }
   })

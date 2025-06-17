@@ -14,8 +14,8 @@ This guide will help you install and set up ChainChirp CLI on your system.
 
 ```bash
 # Clone the repository
-git clone https://github.com/your-repo/chainchirp-cli.git
-cd chainchirp-cli
+git clone https://github.com/TristanBietsch/chainchirp.git
+cd chainchirp
 
 # Install dependencies
 bun install
@@ -31,8 +31,8 @@ bun link
 
 ```bash
 # Clone the repository
-git clone https://github.com/your-repo/chainchirp-cli.git
-cd chainchirp-cli
+git clone https://github.com/TristanBietsch/chainchirp.git
+cd chainchirp
 
 # Install dependencies
 npm install
@@ -173,8 +173,8 @@ For contributors and developers:
 
 ```bash
 # Clone and setup
-git clone https://github.com/your-repo/chainchirp-cli.git
-cd chainchirp-cli
+git clone https://github.com/TristanBietsch/chainchirp.git
+cd chainchirp
 bun install
 
 # Development with hot reload
@@ -268,7 +268,7 @@ bun unlink chainchirp
 npm unlink chainchirp
 
 # Remove project directory
-rm -rf chainchirp-cli
+rm -rf chainchirp
 ```
 
 ## Support

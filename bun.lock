@@ -2,7 +2,7 @@
   "lockfileVersion": 1,
   "workspaces": {
     "": {
-      "name": "chainchirp-cli",
+      "name": "chainchirp",
       "dependencies": {
         "axios": "^1.10.0",
         "cac": "^6.7.14",

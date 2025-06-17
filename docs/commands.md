@@ -4,7 +4,7 @@ A comprehensive guide to all available ChainChirp commands for Bitcoin ecosystem
 
 ## Table of Contents
 
-- [ChainChirp CLI Commands](#chainchirp-cli-commands)
+- [ChainChirp CLI Commands](#chainchirp-commands)
   - [Table of Contents](#table-of-contents)
   - [Overview](#overview)
   - [Global Options](#global-options)
@@ -600,7 +600,7 @@ chainchirp sparkline --help
 ```
 
 For more information, issues, and feature requests:
-**GitHub**: [https://github.com/your-repo/chainchirp-cli](https://github.com/your-repo/chainchirp-cli)
+**GitHub**: [https://github.com/TristanBietsch/chainchirp](https://github.com/TristanBietsch/chainchirp)
 
 ---
 

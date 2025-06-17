@@ -1,4 +1,4 @@
-# chainchirp-cli
+# chainchirp
 
 ![CI](https://github.com/TristanBietsch/chainchirp/actions/workflows/ci.yml/badge.svg)
 

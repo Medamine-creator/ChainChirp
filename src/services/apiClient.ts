@@ -124,6 +124,31 @@ export const API_PROVIDERS: Record<string, ApiProvider> = {
     requiresAuth      : false,
     priority          : 6,
     healthEndpoint    : '/SystemStatus'
+  },
+  // Chain API providers
+  mempool: {
+    name              : 'Mempool.space',
+    baseUrl           : 'https://mempool.space/api',
+    rateLimitPerMinute: 60,
+    requiresAuth      : false,
+    priority          : 1,
+    healthEndpoint    : '/blocks/tip/height'
+  },
+  blockstream: {
+    name              : 'Blockstream',
+    baseUrl           : 'https://blockstream.info/api',
+    rateLimitPerMinute: 60,
+    requiresAuth      : false,
+    priority          : 2,
+    healthEndpoint    : '/blocks/tip/height'
+  },
+  blockchain_info: {
+    name              : 'Blockchain.info',
+    baseUrl           : 'https://blockchain.info',
+    rateLimitPerMinute: 30,
+    requiresAuth      : false,
+    priority          : 3,
+    healthEndpoint    : '/latestblock'
   }
 }
 
@@ -210,7 +235,7 @@ export class MultiFallbackClient {
         baseURL: provider.baseUrl,
         timeout: this.config.apiTimeout,
         headers: {
-          'User-Agent'  : 'ChainChirp-CLI/1.0.0',
+          'User-Agent'  : 'chainchirp/1.0.0',
           Accept        : 'application/json',
           'Content-Type': 'application/json',
           ...provider.headers,
@@ -237,7 +262,7 @@ export class MultiFallbackClient {
     const availableProviders = fallbackOptions.providers
       .filter(provider => !fallbackOptions.skipProviders?.includes(provider))
       .filter(provider => this.clients.has(provider))
-      .sort((a, b) => API_PROVIDERS[a]?.priority - API_PROVIDERS[b]?.priority)
+      .sort((a, b) => (API_PROVIDERS[a]?.priority || 999) - (API_PROVIDERS[b]?.priority || 999))
 
     let lastError: Error | null = null
 
@@ -330,6 +355,12 @@ export class MultiFallbackClient {
         
       case 'kraken':
         return this.transformKrakenRequest(endpoint, params)
+        
+      // Chain providers pass through endpoints directly
+      case 'mempool':
+      case 'blockstream':
+      case 'blockchain_info':
+        return { transformedEndpoint: endpoint, transformedParams: params }
         
       default:
         return { transformedEndpoint: endpoint, transformedParams: params }
@@ -456,6 +487,12 @@ export class MultiFallbackClient {
         
       case 'kraken':
         return this.transformKrakenResponse(data, originalEndpoint) as T
+        
+      // Chain providers return data as-is
+      case 'mempool':
+      case 'blockstream':
+      case 'blockchain_info':
+        return data as T
         
       default:
         return data as T
@@ -614,7 +651,7 @@ export class ApiClient {
     return axios.create({
       timeout: this.config.apiTimeout,
       headers: {
-        'User-Agent'  : 'ChainChirp-CLI/1.0.0',
+        'User-Agent'  : 'chainchirp/1.0.0',
         Accept        : 'application/json',
         'Content-Type': 'application/json',
       },

@@ -34,8 +34,8 @@ Yes, ChainChirp CLI is completely free and open-source. It uses free tiers of va
 See the [Installation Guide](install.md) for detailed instructions. The quickest method:
 
 ```bash
-git clone https://github.com/your-repo/chainchirp-cli.git
-cd chainchirp-cli
+git clone https://github.com/TristanBietsch/chainchirp.git
+cd chainchirp
 bun install && bun run build
 bunx chainchirp price
 ```
