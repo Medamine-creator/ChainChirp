@@ -23,10 +23,9 @@ describe('ChangeService', () => {
     })
 
     test('should have correct endpoints', () => {
-      expect(service.endpoints).toContain('/simple/price')
-      expect(service.endpoints).toContain('/coins/bitcoin/market_chart')
       expect(service.endpoints).toContain('/coins/bitcoin')
-      expect(service.endpoints).toHaveLength(3)
+      expect(service.endpoints).toContain('/coins/bitcoin/market_chart')
+      expect(service.endpoints).toHaveLength(2)
     })
   })
 

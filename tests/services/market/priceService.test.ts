@@ -114,7 +114,7 @@ describe('PriceService', () => {
         market_cap: { usd: 850000000000 },
         total_volume: { usd: 25000000000 },
         price_change_24h: 1500,
-        price_change_percentage_24h: 3.45,
+      price_change_percentage_24h: 3.45,
         high_24h: { usd: 46000 },
         low_24h: { usd: 44000 },
         ath: { usd: 69000 },
@@ -316,7 +316,7 @@ describe('Convenience Functions', () => {
         expect(result.data).toHaveProperty('currency')
         expect(result.data).toHaveProperty('timestamp')
       } else {
-        expect(result.error).toBeInstanceOf(Error)
+      expect(result.error).toBeInstanceOf(Error)
       }
     })
   })

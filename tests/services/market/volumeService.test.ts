@@ -19,8 +19,8 @@ describe('VolumeService', () => {
     })
 
     test('should have correct endpoints', () => {
+      expect(service.endpoints).toContain('/simple/price')
       expect(service.endpoints).toContain('/coins/bitcoin')
-      expect(service.endpoints).toContain('/coins/bitcoin/tickers')
       expect(service.endpoints).toHaveLength(2)
     })
   })

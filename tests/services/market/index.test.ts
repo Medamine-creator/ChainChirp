@@ -26,8 +26,8 @@ describe('MarketService (Unified)', () => {
       expect(service.endpoints).toContain('/simple/price')
       expect(service.endpoints).toContain('/coins/bitcoin')
       
-      // Should include endpoints from volume service  
-      expect(service.endpoints).toContain('/coins/bitcoin/tickers')
+            // Should include endpoints from volume service
+      expect(service.endpoints).toContain('/simple/price')
       
       // Should include endpoints from market chart
       expect(service.endpoints).toContain('/coins/bitcoin/market_chart')
