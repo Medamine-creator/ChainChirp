@@ -1,6 +1,5 @@
 # ChainChirp CLI ⚡
 
-[![CI](https://github.com/TristanBietsch/chainchirp/actions/workflows/ci.yml/badge.svg)](https://github.com/TristanBietsch/chainchirp/actions)
 [![npm version](https://badge.fury.io/js/chainchirp.svg)](https://badge.fury.io/js/chainchirp)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Downloads](https://img.shields.io/npm/dm/chainchirp)](https://npmjs.com/package/chainchirp)
